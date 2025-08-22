@@ -289,6 +289,7 @@ class AffectationForm(BaseFormDialog):
         super().__init__(parent, "Nouvelle Affectation" if unite_travail is None else "Modifier Affectation")
         self.session = session
         self.unite_travail = unite_travail
+        self.carbon_thread = None  # Track the carbon footprint thread
         self.setup_form()
     
     def setup_form(self):
@@ -415,6 +416,11 @@ class AffectationForm(BaseFormDialog):
         if not self.calc_carbon_checkbox.isChecked():
             return
         
+        # Stop any existing calculation
+        if self.carbon_thread and self.carbon_thread.isRunning():
+            self.carbon_thread.terminate()
+            self.carbon_thread.wait()  # Wait for thread to finish
+        
         # Get addresses
         sondeur_id = self.sondeur_combo.currentData()
         chantier_id = self.chantier_combo.currentData()
@@ -473,4 +479,33 @@ class AffectationForm(BaseFormDialog):
         if not self.sondeur_combo.currentData():
             QMessageBox.warning(self, "Erreur", "Veuillez sélectionner un sondeur!")
             return
+        
+        # Clean up thread before accepting
+        self.cleanup_thread()
         super().accept()
+    
+    def reject(self):
+        # Clean up thread before rejecting
+        self.cleanup_thread()
+        super().reject()
+    
+    def closeEvent(self, event):
+        # Clean up thread before closing
+        self.cleanup_thread()
+        super().closeEvent(event)
+    
+    def cleanup_thread(self):
+        """Properly cleanup the carbon footprint calculation thread"""
+        if self.carbon_thread and self.carbon_thread.isRunning():
+            # Disconnect signals to prevent crashes
+            self.carbon_thread.finished.disconnect()
+            self.carbon_thread.error.disconnect()
+            
+            # Stop the thread gracefully
+            self.carbon_thread.terminate()
+            self.carbon_thread.wait(3000)  # Wait up to 3 seconds
+            
+            if self.carbon_thread.isRunning():
+                print("Warning: Thread did not terminate gracefully")
+        
+        self.carbon_thread = None

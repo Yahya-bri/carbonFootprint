@@ -32,6 +32,7 @@ class CarbonFootprintView(QWidget):
         super().__init__()
         self.session = session
         self.calculator = CarbonFootprintCalculator()
+        self.calc_thread = None  # Track the calculation thread
         self.setup_ui()
     
     def setup_ui(self):
@@ -103,6 +104,11 @@ class CarbonFootprintView(QWidget):
     
     def calculate_footprint(self):
         """Calculate carbon footprint for all affectations"""
+        # Stop any existing calculation
+        if self.calc_thread and self.calc_thread.isRunning():
+            self.calc_thread.terminate()
+            self.calc_thread.wait()
+        
         self.calc_button.setEnabled(False)
         self.calc_button.setText("🔄 Calcul en cours...")
         
@@ -169,3 +175,13 @@ class CarbonFootprintView(QWidget):
             "Erreur de calcul", 
             f"Erreur lors du calcul de l'empreinte carbone:\n{error}"
         )
+    
+    def closeEvent(self, event):
+        """Clean up threads when the widget is closed"""
+        if self.calc_thread and self.calc_thread.isRunning():
+            self.calc_thread.finished.disconnect()
+            self.calc_thread.error.disconnect()
+            self.calc_thread.terminate()
+            self.calc_thread.wait(3000)
+        
+        super().closeEvent(event)

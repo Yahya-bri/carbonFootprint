@@ -2,9 +2,43 @@ import googlemaps
 from datetime import datetime
 from typing import Optional
 import os
+import json
 
-# Google Maps API Key - should be loaded from environment variable for security
-GOOGLE_MAPS_API_KEY = "AIzaSyA5lNc_aRFIbnbYPMHczI6R1MF7jPuAZLw"
+
+# Load Google Maps API key: prefer environment variable, then repo-root config.json
+def _load_google_maps_api_key() -> str | None:
+    """Return the Google Maps API key from environment or config.json (repo root).
+
+    Order:
+    1. Environment variable GOOGLE_MAPS_API_KEY
+    2. config.json at repository root with key "GOOGLE_MAPS_API_KEY" (or "google_maps_api_key")
+    Returns None if not found.
+    """
+    # 1) environment
+    env_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    if env_key:
+        return env_key
+
+    # 2) config.json in repository root (one level up from src/)
+    config_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'config.json'))
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            cfg = json.load(f)
+            # accept either key name
+            return cfg.get('GOOGLE_MAPS_API_KEY') or cfg.get('google_maps_api_key')
+    except FileNotFoundError:
+        return None
+    except Exception as e:
+        # Non-fatal: warn and continue
+        print(f"Warning: could not read API key from {config_path}: {e}")
+        return None
+
+
+# Resolved API key (empty string if not found)
+GOOGLE_MAPS_API_KEY = _load_google_maps_api_key() or ""
+if not GOOGLE_MAPS_API_KEY:
+    print("Warning: GOOGLE_MAPS_API_KEY not found in environment or config.json."
+          " Set GOOGLE_MAPS_API_KEY env var or add config.json with the key.")
 
 
 def get_driving_distance_km(api_key: str, address1: str, address2: str) -> float | None:
