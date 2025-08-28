@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Geotechnical Study Carbon Footprint Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .map-container {
+        height: 400px;
+        width: 100%;
+        margin-top: 1rem;
+      }
+      .vehicle-card {
+        transition: all 0.3s;
+      }
+      .vehicle-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      }
+      .destination-item {
+        animation: fadeIn 0.5s;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      .pulse {
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.6;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 font-sans">
+    <div id="app" class="min-h-screen">
+      <!-- Loading overlay -->
+      <div v-if="loading" class="loading-overlay">
+        <div class="text-center">
+          <div
+            class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mx-auto mb-4"
+          ></div>
+          <p class="text-lg text-gray-700">{{ loadingMessage }}</p>
+        </div>
+      </div>
+
+      <!-- API Key Modal -->
+      <div
+        v-if="showApiKeyModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      >
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+          <h2 class="text-2xl font-bold text-gray-800 mb-4">
+            Google Maps API Key Required
+          </h2>
+          <p class="text-gray-600 mb-6">
+            Please enter your Google Maps API key to use the distance
+            calculation features.
+          </p>
+          <input
+            v-model="apiKey"
+            type="text"
+            placeholder="Enter your API key"
+            class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            @keyup.enter="saveApiKey"
+          />
+          <div class="flex space-x-4">
+            <button
+              @click="saveApiKey"
+              class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Save Key
+            </button>
+            <button
+              @click="useDemoModeMethod"
+              class="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Demo Mode
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mt-4">
+            Don't have a key? You can get one at
+            <a
+              href="https://developers.google.com/maps/documentation/javascript/get-api-key"
+              target="_blank"
+              class="text-blue-600 hover:underline"
+            >
+              Google Cloud Platform
+            </a>
+          </p>
+        </div>
+      </div>
+
+      <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+          <h1 class="text-4xl font-bold text-gray-800 mb-2">
+            Geotechnical Study Carbon Footprint Calculator
+          </h1>
+          <p class="text-lg text-gray-600">
+            Plan your field measurements and calculate transportation emissions
+          </p>
+          
+          <!-- Configuration Status Indicators -->
+          <div class="flex justify-center space-x-4 mt-4">
+            <div class="flex items-center text-sm">
+              <div class="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+              <span class="text-gray-600">Session data available</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Vehicle Management -->
+          <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+              <h2
+                class="text-2xl font-semibold text-gray-800 mb-4 flex items-center"
+              >
+                <svg
+                  class="w-6 h-6 mr-2 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  ></path>
+                </svg>
+                Vehicle Management
+              </h2>
+
+              <div
+                v-for="(vehicle, index) in vehicles"
+                :key="index"
+                class="vehicle-card bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200"
+                :class="{ 'ring-2 ring-blue-500 bg-blue-50': selectedVehicle === index }"
+              >
+                <div class="flex justify-between items-start mb-2">
+                  <h3 class="font-semibold text-gray-800">
+                    {{ vehicle.name }}
+                  </h3>
+                  <div class="flex space-x-2">
+                    <button
+                      @click="selectedVehicle = index"
+                      class="text-blue-500 hover:text-blue-700 text-sm"
+                      v-if="selectedVehicle !== index"
+                    >
+                      Select
+                    </button>
+                    <button
+                      @click="removeVehicle(index)"
+                      class="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+                <p class="text-sm text-gray-600 mb-1">
+                  <strong>Study:</strong> {{ vehicle.studySettings ? vehicle.studySettings.studyName : 'Not configured' }}
+                </p>
+                <p class="text-sm text-gray-600 mb-1">
+                  <strong>Home:</strong> {{ vehicle.homeAddress || 'Not specified' }}
+                </p>
+                <p class="text-sm text-gray-600 mb-1">
+                  <strong>Emission:</strong> {{ vehicle.emissionFactor || 0 }} kg
+                  CO₂/L
+                </p>
+                <p class="text-sm text-gray-600 mb-1">
+                  <strong>Consumption:</strong> {{ vehicle.consumption || 0 }}
+                  L/100km
+                </p>
+                <p class="text-sm text-gray-600">
+                  <strong>Sites:</strong> {{ vehicle.destinations ? vehicle.destinations.length : 0 }} assigned
+                </p>
+              </div>
+
+              <button
+                @click="showAddVehicleModal = true"
+                class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+              >
+                <svg
+                  class="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  ></path>
+                </svg>
+                Add Vehicle
+              </button>
+            </div>
+
+            <!-- Vehicle-Specific Study Settings -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+                Study Settings for {{ selectedVehicleData ? selectedVehicleData.name : 'No Vehicle Selected' }}
+              </h2>
+
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Study Name</label
+                >
+                <input
+                  v-model="studyName"
+                  type="text"
+                  class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Site Investigation Project"
+                />
+              </div>
+
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Duration (days)</label
+                >
+                <input
+                  v-model.number="studyDuration"
+                  type="number"
+                  min="1"
+                  class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Working Hours per Day</label
+                >
+                <select
+                  v-model="workingHours"
+                  class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="8">8 hours</option>
+                  <option value="10">10 hours</option>
+                  <option value="12">12 hours</option>
+                </select>
+              </div>
+
+              <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+                <h4 class="text-sm font-medium text-blue-800 mb-1">Vehicle Info</h4>
+                <p class="text-xs text-blue-600">{{ selectedVehicleData ? selectedVehicleData.emissionFactor : 0 }} kg CO₂/L emission factor</p>
+                <p class="text-xs text-blue-600">{{ selectedVehicleData ? selectedVehicleData.consumption : 0 }} L/100km consumption</p>
+                <p class="text-xs text-blue-600">Base: {{ selectedVehicleData ? selectedVehicleData.homeAddress : 'Not specified' }}</p>
+              </div>
+
+              <!-- Session Management -->
+              <div class="mb-4 pt-4 border-t border-gray-200">
+                <h3 class="text-lg font-medium text-gray-800 mb-3">Session Management</h3>
+                
+                <div class="space-y-2">
+                  <button
+                    @click="exportSessionData"
+                    class="w-full bg-green-600 text-white py-2 px-3 rounded text-sm hover:bg-green-700 transition-colors"
+                  >
+                    Export Session Data
+                  </button>
+                  
+                  <button
+                    @click="importSessionData"
+                    class="w-full bg-blue-600 text-white py-2 px-3 rounded text-sm hover:bg-blue-700 transition-colors"
+                  >
+                    Import Session Data
+                  </button>
+                  
+                  <button
+                    @click="loadFromLocalStorage"
+                    class="w-full bg-yellow-600 text-white py-2 px-3 rounded text-sm hover:bg-yellow-700 transition-colors"
+                  >
+                    Load from Browser Storage
+                  </button>
+                </div>
+
+                <!-- Session History -->
+                <div v-if="sessionHistory.length > 0" class="mt-4">
+                  <h4 class="text-sm font-medium text-gray-700 mb-2">Recent Sessions</h4>
+                  <div class="max-h-32 overflow-y-auto">
+                    <div
+                      v-for="(session, index) in sessionHistory.slice(0, 5)"
+                      :key="index"
+                      class="text-xs text-gray-600 p-2 bg-gray-50 rounded mb-1"
+                    >
+                      <div class="font-medium">Multi-Vehicle Session</div>
+                      <div v-for="vehicle in session.vehicles" :key="vehicle.name">
+                        {{ vehicle.name }}: {{ vehicle.totalSites }} sites, {{ vehicle.totalCO2.toFixed(1) }} kg CO₂
+                      </div>
+                      <div class="text-gray-500">{{ new Date(session.timestamp).toLocaleDateString() }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Content -->
+          <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <div class="flex justify-between items-center mb-6">
+                <div>
+                  <h2 class="text-2xl font-semibold text-gray-800">
+                    Field Sites for {{ selectedVehicleData ? selectedVehicleData.name : 'No Vehicle Selected' }}
+                  </h2>
+                  <p class="text-sm text-gray-600">
+                    {{ selectedVehicleData && selectedVehicleData.studySettings ? selectedVehicleData.studySettings.studyName : 'No study configured' }}
+                  </p>
+                </div>
+                <div class="flex space-x-2">
+                  <button
+                    @click="addDestination"
+                    class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                  >
+                    <svg
+                      class="w-5 h-5 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      ></path>
+                    </svg>
+                    Add Site
+                  </button>
+                  <button
+                    @click="calculateAllDistances"
+                    class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                  >
+                    <svg
+                      class="w-5 h-5 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                      ></path>
+                    </svg>
+                    Calculate All
+                  </button>
+                </div>
+              </div>
+
+              <!-- Destinations List -->
+              <div class="space-y-4 mb-6">
+                <div
+                  v-for="(destination, index) in destinations"
+                  :key="index"
+                  class="destination-item border border-gray-200 rounded-lg p-4"
+                >
+                  <div class="flex justify-between items-start mb-3">
+                    <h3 class="font-semibold text-gray-800">
+                      Site {{ index + 1 }}
+                    </h3>
+                    <div class="flex space-x-2">
+                      <button
+                        @click="editDestination(index)"
+                        class="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        @click="removeDestination(index)"
+                        class="text-red-600 hover:text-red-800 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p class="text-gray-600">
+                        <strong>Address:</strong> {{ destination.address }}
+                      </p>
+                      <p class="text-gray-600">
+                        <strong>Measurements:</strong> {{
+                        destination.measurements }}
+                      </p>
+                      <p class="text-gray-600">
+                        <strong>Duration:</strong> {{ destination.duration }} hours
+                      </p>
+                    </div>
+                    <div>
+                      <p class="text-gray-600">
+                        <strong>Distance:</strong> {{ getDistanceText(destination) }}
+                      </p>
+                      <p class="text-gray-600">
+                        <strong>Round Trip:</strong> {{ getRoundTripText(destination) }}
+                      </p>
+                      <p class="text-gray-600">
+                        <strong>Fuel Used:</strong> {{ getFuelUsedText(destination) }}
+                      </p>
+                      <p class="text-gray-600">
+                        <strong>CO₂ Emissions:</strong> {{ getCO2EmissionsText(destination) }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 pt-3 border-t border-gray-100">
+                    <div class="flex flex-wrap gap-2">
+                      <span
+                        v-for="day in destination.days"
+                        :key="day"
+                        class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                      >
+                        Day {{ day }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  v-if="destinations.length === 0"
+                  class="text-center py-8 text-gray-500"
+                >
+                  <svg
+                    class="w-16 h-16 mx-auto mb-4 text-gray-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    ></path>
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    ></path>
+                  </svg>
+                  <p class="text-lg">
+                    No sites added yet. Click "Add Site" to begin planning your
+                    field measurements.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Map -->
+              <div
+                class="map-container rounded-lg overflow-hidden"
+                id="map"
+              ></div>
+
+              <!-- Overall Project Summary with Pie Chart -->
+              <div class="mt-8 pt-6 border-t border-gray-200">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">
+                  Overall Project Emissions Summary
+                </h3>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <!-- Summary Cards -->
+                  <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                      <div class="bg-blue-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-blue-800 text-sm">Total Distance</h4>
+                        <p class="text-xl font-bold text-blue-600">
+                          {{ grandTotalDistance.toFixed(2) }} km
+                        </p>
+                      </div>
+                      <div class="bg-yellow-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-yellow-800 text-sm">Total Fuel</h4>
+                        <p class="text-xl font-bold text-yellow-600">
+                          {{ grandTotalFuel.toFixed(2) }} L
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div class="bg-red-50 p-4 rounded-lg">
+                      <h4 class="font-semibold text-red-800">Total CO₂ Emissions</h4>
+                      <p class="text-3xl font-bold text-red-600">
+                        {{ grandTotalCO2.toFixed(2) }} kg
+                      </p>
+                    </div>
+
+                    <!-- Vehicle Breakdown Table -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                      <h4 class="font-semibold text-gray-800 mb-3">Vehicle Breakdown</h4>
+                      <div class="space-y-2">
+                        <div
+                          v-for="(vehicle, index) in allVehiclesTotals"
+                          :key="`vehicle-${index}-${vehicle.name}`"
+                          class="flex justify-between items-center py-2 px-3 bg-white rounded border text-sm"
+                        >
+                          <div>
+                            <div class="font-medium">{{ vehicle.name }}</div>
+                            <div class="text-gray-500 text-xs">{{ vehicle.sitesCount }} sites</div>
+                          </div>
+                          <div class="text-right">
+                            <div class="font-bold">{{ vehicle.totalCO2.toFixed(2) }} kg CO₂</div>
+                            <div class="text-gray-500 text-xs">{{ vehicle.totalDistance.toFixed(1) }} km</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Debug info - will remove after fixing -->
+                      <div class="mt-4 p-2 bg-yellow-100 rounded text-xs">
+                        <strong>Debug:</strong> Found {{ allVehiclesTotals.length }} vehicles, 
+                        Grand Total: {{ grandTotalCO2.toFixed(2) }} kg CO₂
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Pie Chart -->
+                  <div class="bg-white p-4 rounded-lg border">
+                    <h4 class="font-semibold text-gray-800 mb-4 text-center">CO₂ Emissions Distribution</h4>
+                    <div class="relative" style="height: 300px;">
+                      <canvas id="emissionsChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Vehicle Summary -->
+              <div
+                v-if="destinations.length > 0"
+                class="mt-8 pt-6 border-t border-gray-200"
+              >
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                  Summary for {{ selectedVehicleData ? selectedVehicleData.name : 'No Vehicle Selected' }}
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div class="bg-blue-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-blue-800">Total Distance</h4>
+                    <p class="text-2xl font-bold text-blue-600">
+                      {{ totalDistance.toFixed(2) }} km
+                    </p>
+                  </div>
+                  <div class="bg-yellow-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-yellow-800">Total Fuel</h4>
+                    <p class="text-2xl font-bold text-yellow-600">
+                      {{ totalFuel.toFixed(2) }} L
+                    </p>
+                  </div>
+                  <div class="bg-green-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-green-800">Total CO₂</h4>
+                    <p class="text-2xl font-bold text-green-600">
+                      {{ totalCO2.toFixed(2) }} kg
+                    </p>
+                  </div>
+                  <div class="bg-purple-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-purple-800">Assigned Sites</h4>
+                    <p class="text-2xl font-bold text-purple-600">
+                      {{ destinations.length }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add/Edit Destination Modal -->
+      <div
+        v-if="showDestinationModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      >
+        <div
+          class="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto"
+        >
+          <h2 class="text-2xl font-bold text-gray-800 mb-6">
+            {{ editingIndex !== null ? 'Edit Site' : 'Add New Site' }}
+          </h2>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Site Address</label
+              >
+              <input
+                v-model="currentDestination.address"
+                type="text"
+                ref="addressInput"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter site address"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Measurements to Perform</label
+              >
+              <textarea
+                v-model="currentDestination.measurements"
+                rows="3"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Describe the geotechnical measurements to be performed"
+              ></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Duration (hours)</label
+                >
+                <input
+                  v-model.number="currentDestination.duration"
+                  type="number"
+                  step="0.5"
+                  min="0.5"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Visit Days</label
+                >
+                <div class="flex flex-wrap gap-2">
+                  <div
+                    v-for="day in studyDuration"
+                    :key="day"
+                    class="flex items-center"
+                  >
+                    <input
+                      type="checkbox"
+                      :value="day"
+                      v-model="currentDestination.days"
+                      :id="'day-' + day"
+                      class="mr-1"
+                    />
+                    <label :for="'day-' + day" class="text-sm"
+                      >Day {{ day }}</label
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end space-x-4 mt-6">
+            <button
+              @click="showDestinationModal = false"
+              class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              @click="saveDestination"
+              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Save Site
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Vehicle Modal -->
+      <div
+        v-if="showAddVehicleModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      >
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-lg w-full max-h-screen overflow-y-auto">
+          <h2 class="text-2xl font-bold text-gray-800 mb-6">Add New Vehicle</h2>
+
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Vehicle Name</label
+              >
+              <input
+                v-model="newVehicle.name"
+                type="text"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="e.g., Field Survey Van"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Home Address</label
+              >
+              <input
+                v-model="newVehicle.homeAddress"
+                type="text"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter home base address"
+              />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Emission Factor (kg CO₂/L)</label
+                >
+                <input
+                  v-model.number="newVehicle.emissionFactor"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Fuel Consumption (L/100km)</label
+                >
+                <input
+                  v-model.number="newVehicle.consumption"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <!-- Study Settings for the new vehicle -->
+            <div class="pt-4 border-t border-gray-200">
+              <h3 class="text-lg font-medium text-gray-800 mb-3">Study Settings</h3>
+              
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                    >Study Name</label
+                  >
+                  <input
+                    v-model="newVehicle.studySettings.studyName"
+                    type="text"
+                    class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., Site Investigation Project"
+                  />
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"
+                      >Duration (days)</label
+                    >
+                    <input
+                      v-model.number="newVehicle.studySettings.studyDuration"
+                      type="number"
+                      min="1"
+                      class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"
+                      >Working Hours/Day</label
+                    >
+                    <select
+                      v-model="newVehicle.studySettings.workingHours"
+                      class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="8">8 hours</option>
+                      <option value="10">10 hours</option>
+                      <option value="12">12 hours</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end space-x-4 mt-6">
+            <button
+              @click="showAddVehicleModal = false"
+              class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              @click="addNewVehicle"
+              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Add Vehicle
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Initialize Vue app
+      new Vue({
+        el: "#app",
+        data: {
+          // Application state
+          loading: false,
+          loadingMessage: "Initializing...",
+          apiKey: "",
+          showApiKeyModal: true,
+          isDemoMode: false,
+
+          // Study settings (removed global, now per-vehicle)
+          // Each vehicle has its own study settings and field sites
+          
+          // Vehicles with their own study settings and destinations
+          vehicles: [
+            {
+              name: "Field Survey Van",
+              homeAddress: "123 Engineering Road, City Center",
+              emissionFactor: 2.31,
+              consumption: 8.5,
+              studySettings: {
+                studyName: "Geotechnical Investigation - Team A",
+                studyDuration: 5,
+                workingHours: 8
+              },
+              destinations: []
+            },
+            {
+              name: "Compact SUV",
+              homeAddress: "123 Engineering Road, City Center",
+              emissionFactor: 2.31,
+              consumption: 7.2,
+              studySettings: {
+                studyName: "Geotechnical Investigation - Team B",
+                studyDuration: 5,
+                workingHours: 8
+              },
+              destinations: []
+            },
+          ],
+          selectedVehicle: 0,
+          newVehicle: {
+            name: "",
+            homeAddress: "",
+            emissionFactor: 2.31,
+            consumption: 6.5,
+            studySettings: {
+              studyName: "New Investigation",
+              studyDuration: 5,
+              workingHours: 8
+            },
+            destinations: []
+          },
+          showAddVehicleModal: false,
+
+          // Current destination editing (shared across vehicles)
+          currentDestination: {
+            address: "",
+            measurements: "",
+            duration: 4,
+            days: [1],
+          },
+          editingIndex: null,
+          showDestinationModal: false,
+
+          // Map
+          map: null,
+          markers: [],
+          directionsService: null,
+          directionsRenderer: null,
+          googleMapsLoaded: false,
+
+          // Calculations
+          totalDistance: 0,
+          totalFuel: 0,
+          totalCO2: 0,
+
+          // Pie chart
+          emissionsChart: null,
+
+          // Session management
+          sessionHistory: [],
+        },
+
+        computed: {
+          selectedVehicleData() {
+            return this.vehicles[this.selectedVehicle] || this.vehicles[0];
+          },
+          
+          // Current vehicle's destinations
+          destinations() {
+            const vehicle = this.selectedVehicleData;
+            return (vehicle && vehicle.destinations) ? vehicle.destinations : [];
+          },
+          
+          // Current vehicle's study settings
+          studyName: {
+            get() {
+              const vehicle = this.selectedVehicleData;
+              return (vehicle && vehicle.studySettings) ? vehicle.studySettings.studyName : '';
+            },
+            set(value) {
+              const vehicle = this.selectedVehicleData;
+              if (vehicle && vehicle.studySettings) {
+                vehicle.studySettings.studyName = value;
+              }
+            }
+          },
+          
+          studyDuration: {
+            get() {
+              const vehicle = this.selectedVehicleData;
+              return (vehicle && vehicle.studySettings) ? vehicle.studySettings.studyDuration : 5;
+            },
+            set(value) {
+              const vehicle = this.selectedVehicleData;
+              if (vehicle && vehicle.studySettings) {
+                vehicle.studySettings.studyDuration = value;
+              }
+            }
+          },
+          
+          workingHours: {
+            get() {
+              const vehicle = this.selectedVehicleData;
+              return (vehicle && vehicle.studySettings) ? vehicle.studySettings.workingHours : 8;
+            },
+            set(value) {
+              const vehicle = this.selectedVehicleData;
+              if (vehicle && vehicle.studySettings) {
+                vehicle.studySettings.workingHours = value;
+              }
+            }
+          },
+          
+          // All vehicles totals for pie chart
+          allVehiclesTotals() {
+            // Force reactivity by accessing vehicles array length
+            const vehiclesCount = this.vehicles.length;
+            
+            return this.vehicles.map((vehicle, index) => {
+              const destinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
+              // Force reactivity by accessing destinations array length
+              const destinationsCount = destinations.length;
+              
+              const totalCO2 = destinations.reduce((total, dest) => total + (dest.co2Emissions || 0), 0);
+              const totalDistance = destinations.reduce((total, dest) => total + (dest.roundTripDistance || 0), 0);
+              const totalFuel = destinations.reduce((total, dest) => total + (dest.fuelUsed || 0), 0);
+              
+              return {
+                name: vehicle.name || 'Unknown Vehicle',
+                studyName: (vehicle.studySettings && vehicle.studySettings.studyName) ? vehicle.studySettings.studyName : 'No Study',
+                totalCO2: totalCO2,
+                totalDistance: totalDistance,
+                totalFuel: totalFuel,
+                sitesCount: destinations.length,
+                vehicleIndex: index // Add index for debugging
+              };
+            });
+          },
+          
+          grandTotalCO2() {
+            // Force recalculation by explicitly accessing all vehicle totals
+            const totals = this.allVehiclesTotals;
+            return totals.reduce((total, vehicle) => {
+              return total + (vehicle.totalCO2 || 0);
+            }, 0);
+          },
+          
+          grandTotalDistance() {
+            const totals = this.allVehiclesTotals;
+            return totals.reduce((total, vehicle) => {
+              return total + (vehicle.totalDistance || 0);
+            }, 0);
+          },
+          
+          grandTotalFuel() {
+            const totals = this.allVehiclesTotals;
+            return totals.reduce((total, vehicle) => {
+              return total + (vehicle.totalFuel || 0);
+            }, 0);
+          },
+        },
+
+        watch: {
+          vehicles: {
+            handler() {
+              this.calculateTotals();
+              this.updateMap();
+              this.saveSessionData();
+              this.updateEmissionsChart();
+            },
+            deep: true,
+          },
+
+          selectedVehicle() {
+            this.calculateAllDistances();
+            this.saveSessionData();
+          },
+        },
+
+        mounted() {
+          // Initialize default vehicles first
+          this.initializeDefaultVehicles();
+          
+          // Then try to load configurations
+          this.loadApiKey();
+          this.loadSessionData();
+          
+          // Initialize the emissions chart
+          this.$nextTick(() => {
+            this.updateEmissionsChart();
+          });
+        },
+
+        methods: {
+          // Helper methods for template expressions
+          getDistanceText(destination) {
+            return destination.distance 
+              ? destination.distance.toFixed(2) + ' km' 
+              : 'Not calculated';
+          },
+
+          getRoundTripText(destination) {
+            return destination.roundTripDistance 
+              ? destination.roundTripDistance.toFixed(2) + ' km' 
+              : 'Not calculated';
+          },
+
+          getFuelUsedText(destination) {
+            return destination.fuelUsed 
+              ? destination.fuelUsed.toFixed(2) + ' L' 
+              : 'Not calculated';
+          },
+
+          getCO2EmissionsText(destination) {
+            return destination.co2Emissions 
+              ? destination.co2Emissions.toFixed(2) + ' kg' 
+              : 'Not calculated';
+          },
+
+          loadApiKey() {
+            // Try to get API key from localStorage
+            const savedKey = localStorage.getItem("googleMapsApiKey");
+            if (savedKey) {
+              this.apiKey = savedKey;
+              this.showApiKeyModal = false;
+              this.initGoogleMaps();
+            } else {
+              this.showApiKeyModal = true;
+            }
+          },
+
+          saveApiKey() {
+            if (this.apiKey.trim()) {
+              localStorage.setItem("googleMapsApiKey", this.apiKey.trim());
+              this.showApiKeyModal = false;
+              this.initGoogleMaps();
+            } else {
+              alert("Please enter a valid API key");
+            }
+          },
+
+          useDemoModeMethod() {
+            this.isDemoMode = true;
+            this.showApiKeyModal = false;
+            this.setupDemoData();
+            this.initMapWithoutGoogle();
+          },
+
+          initGoogleMaps() {
+            // Remove existing script if any
+            const existingScript = document.getElementById("google-maps-script");
+            if (existingScript) {
+              existingScript.remove();
+            }
+
+            // Create new script with the API key
+            const script = document.createElement("script");
+            script.id = "google-maps-script";
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places&callback=initGoogleMapsCallback`;
+            script.async = true;
+            script.defer = true;
+            
+            // Set up global callback
+            window.initGoogleMapsCallback = () => {
+              this.googleMapsLoaded = true;
+              this.initMap();
+              this.setupAutocomplete();
+              this.updateMap();
+            };
+            
+            script.onerror = () => {
+              alert(
+                "Failed to load Google Maps. Please check your API key and internet connection."
+              );
+              this.isDemoMode = true;
+              this.setupDemoData();
+              this.initMapWithoutGoogle();
+            };
+            document.head.appendChild(script);
+          },
+
+          initMapWithoutGoogle() {
+            // Initialize a placeholder for demo mode
+            const mapElement = document.getElementById("map");
+            if (mapElement) {
+              mapElement.innerHTML = `
+                <div class="flex items-center justify-center h-full bg-gray-100 text-gray-500">
+                  <div class="text-center">
+                    <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m0 0L9 7"></path>
+                    </svg>
+                    <p class="text-lg font-medium">Demo Mode</p>
+                    <p class="text-sm">Map functionality requires Google Maps API</p>
+                  </div>
+                </div>
+              `;
+            }
+          },
+
+          setupAutocomplete() {
+            if (this.$refs.addressInput && this.googleMapsLoaded && window.google) {
+              const autocomplete = new google.maps.places.Autocomplete(
+                this.$refs.addressInput
+              );
+              autocomplete.setFields([
+                "address_components",
+                "geometry",
+                "name",
+              ]);
+              autocomplete.addListener("place_changed", () => {
+                const place = autocomplete.getPlace();
+                if (place.geometry) {
+                  this.currentDestination.address =
+                    place.formatted_address || place.name;
+                }
+              });
+            }
+          },
+
+          setupDemoData() {
+            // Setup demo data for the selected vehicle
+            const vehicle = this.selectedVehicleData;
+            if (!vehicle) return;
+            
+            if (!vehicle.destinations) {
+              vehicle.destinations = [];
+            }
+            
+            vehicle.destinations = [
+              {
+                address: "456 Site Investigation Blvd, Industrial Zone",
+                measurements: "Soil sampling and borehole logging",
+                duration: 6,
+                days: [1, 2],
+                distance: 25.4,
+                roundTripDistance: 50.8,
+                fuelUsed: 4.32,
+                co2Emissions: 9.98,
+              },
+              {
+                address: "789 Foundation Street, Construction Site",
+                measurements: "In-situ testing and groundwater monitoring",
+                duration: 8,
+                days: [3, 4],
+                distance: 18.2,
+                roundTripDistance: 36.4,
+                fuelUsed: 3.09,
+                co2Emissions: 7.14,
+              },
+            ];
+            this.calculateTotals();
+            this.updateEmissionsChart();
+          },
+
+          initMap() {
+            const mapElement = document.getElementById("map");
+            if (!mapElement || !this.googleMapsLoaded || !window.google || !window.google.maps) {
+              console.warn("Map element not found or Google Maps not loaded");
+              return;
+            }
+
+            try {
+              this.map = new google.maps.Map(mapElement, {
+                center: { lat: 40.7128, lng: -74.006 },
+                zoom: 10,
+                mapTypeControl: false,
+                streetViewControl: false,
+              });
+
+              this.directionsService = new google.maps.DirectionsService();
+              this.directionsRenderer = new google.maps.DirectionsRenderer({
+                map: this.map,
+                suppressMarkers: true,
+                polylineOptions: {
+                  strokeColor: "#4F46E5",
+                  strokeWeight: 5,
+                },
+              });
+            } catch (error) {
+              console.error("Error initializing Google Maps:", error);
+              this.isDemoMode = true;
+              this.initMapWithoutGoogle();
+            }
+          },
+
+          updateMap() {
+            const vehicle = this.selectedVehicleData;
+            const vehicleDestinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
+            if (!this.map || !this.googleMapsLoaded || vehicleDestinations.length === 0) return;
+
+            // Clear existing markers
+            this.markers.forEach((marker) => marker.setMap(null));
+            this.markers = [];
+
+            const bounds = new google.maps.LatLngBounds();
+            const homeAddress = vehicle ? vehicle.homeAddress : '';
+
+            if (!homeAddress) return;
+
+            // Add home marker
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ address: homeAddress }, (results, status) => {
+              if (status === "OK" && results[0]) {
+                const homeMarker = new google.maps.Marker({
+                  position: results[0].geometry.location,
+                  map: this.map,
+                  title: "Home Base",
+                  icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+                });
+                this.markers.push(homeMarker);
+                bounds.extend(results[0].geometry.location);
+
+                // Add destination markers
+                vehicleDestinations.forEach((destination) => {
+                  geocoder.geocode(
+                    { address: destination.address },
+                    (destResults, destStatus) => {
+                      if (destStatus === "OK" && destResults[0]) {
+                        const destMarker = new google.maps.Marker({
+                          position: destResults[0].geometry.location,
+                          map: this.map,
+                          title: destination.address,
+                          icon: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+                        });
+                        this.markers.push(destMarker);
+                        bounds.extend(destResults[0].geometry.location);
+
+                        // Fit map to show all markers
+                        this.map.fitBounds(bounds);
+                      }
+                    }
+                  );
+                });
+              }
+            });
+          },
+
+          calculateDistance(destination) {
+            return new Promise((resolve, reject) => {
+              if (this.isDemoMode) {
+                // In demo mode, use random distances
+                const distance = 10 + Math.random() * 40;
+                destination.distance = distance;
+                destination.roundTripDistance = distance * 2;
+                destination.fuelUsed =
+                  (destination.roundTripDistance *
+                    this.selectedVehicleData.consumption) /
+                  100;
+                destination.co2Emissions =
+                  destination.fuelUsed *
+                  this.selectedVehicleData.emissionFactor;
+                resolve();
+                return;
+              }
+
+              if (!this.googleMapsLoaded || !window.google) {
+                console.warn("Google Maps not loaded, using fallback values");
+                destination.distance = 0;
+                destination.roundTripDistance = 0;
+                destination.fuelUsed = 0;
+                destination.co2Emissions = 0;
+                resolve();
+                return;
+              }
+
+              const homeAddress = this.selectedVehicleData.homeAddress;
+              const service = new google.maps.DistanceMatrixService();
+
+              service.getDistanceMatrix(
+                {
+                  origins: [homeAddress],
+                  destinations: [destination.address],
+                  travelMode: "DRIVING",
+                  unitSystem: google.maps.UnitSystem.METRIC,
+                },
+                (response, status) => {
+                  if (
+                    status === "OK" &&
+                    response.rows[0].elements[0].status === "OK"
+                  ) {
+                    const distanceInKm =
+                      response.rows[0].elements[0].distance.value / 1000;
+                    destination.distance = distanceInKm;
+                    destination.roundTripDistance = distanceInKm * 2;
+                    destination.fuelUsed =
+                      (destination.roundTripDistance *
+                        this.selectedVehicleData.consumption) /
+                      100;
+                    destination.co2Emissions =
+                      destination.fuelUsed *
+                      this.selectedVehicleData.emissionFactor;
+                    resolve();
+                  } else {
+                    console.error("Distance calculation failed:", status);
+                    // Use fallback values
+                    destination.distance = 0;
+                    destination.roundTripDistance = 0;
+                    destination.fuelUsed = 0;
+                    destination.co2Emissions = 0;
+                    resolve();
+                  }
+                }
+              );
+            });
+          },
+
+          async calculateAllDistances() {
+            const vehicle = this.selectedVehicleData;
+            const vehicleDestinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
+            if (vehicleDestinations.length === 0) return;
+
+            this.loading = true;
+            this.loadingMessage = "Calculating distances...";
+
+            try {
+              // Calculate distance for each destination
+              for (let i = 0; i < vehicleDestinations.length; i++) {
+                this.loadingMessage = `Calculating distance ${i + 1} of ${
+                  vehicleDestinations.length
+                }...`;
+                await this.calculateDistance(vehicleDestinations[i]);
+              }
+
+              this.calculateTotals();
+              this.updateMap();
+              this.updateEmissionsChart();
+            } catch (error) {
+              console.error("Error calculating distances:", error);
+              alert("Error calculating distances. Please try again.");
+            } finally {
+              this.loading = false;
+            }
+          },
+
+          calculateTotals() {
+            const vehicle = this.selectedVehicleData;
+            const vehicleDestinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
+            
+            this.totalDistance = vehicleDestinations.reduce((total, dest) => {
+              return total + (dest.roundTripDistance || 0);
+            }, 0);
+
+            this.totalFuel = vehicleDestinations.reduce((total, dest) => {
+              return total + (dest.fuelUsed || 0);
+            }, 0);
+
+            this.totalCO2 = vehicleDestinations.reduce((total, dest) => {
+              return total + (dest.co2Emissions || 0);
+            }, 0);
+          },
+
+          addDestination() {
+            this.currentDestination = {
+              address: "",
+              measurements: "",
+              duration: 4,
+              days: [1],
+            };
+            this.editingIndex = null;
+            this.showDestinationModal = true;
+
+            // Focus the address input after modal shows
+            this.$nextTick(() => {
+              if (this.$refs.addressInput) {
+                this.$refs.addressInput.focus();
+              }
+            });
+          },
+
+          editDestination(index) {
+            const vehicle = this.selectedVehicleData;
+            if (!vehicle || !vehicle.destinations || !vehicle.destinations[index]) {
+              return;
+            }
+            
+            this.currentDestination = _.cloneDeep(vehicle.destinations[index]);
+            this.editingIndex = index;
+            this.showDestinationModal = true;
+
+            this.$nextTick(() => {
+              if (this.$refs.addressInput) {
+                this.$refs.addressInput.focus();
+              }
+            });
+          },
+
+          saveDestination() {
+            if (!this.currentDestination.address.trim()) {
+              alert("Please enter a site address");
+              return;
+            }
+
+            if (this.currentDestination.days.length === 0) {
+              alert("Please select at least one day for the site visit");
+              return;
+            }
+
+            // Work with current vehicle's destinations
+            const vehicle = this.selectedVehicleData;
+            if (!vehicle || !vehicle.destinations) {
+              alert("No vehicle selected or vehicle data is incomplete");
+              return;
+            }
+
+            const vehicleDestinations = vehicle.destinations;
+
+            if (this.editingIndex !== null) {
+              vehicleDestinations[this.editingIndex] = _.cloneDeep(
+                this.currentDestination
+              );
+            } else {
+              vehicleDestinations.push(_.cloneDeep(this.currentDestination));
+            }
+
+            this.showDestinationModal = false;
+            this.calculateAllDistances();
+            
+            // Force refresh of chart and totals
+            this.$nextTick(() => {
+              this.updateEmissionsChart();
+            });
+          },
+
+          removeDestination(index) {
+            if (confirm("Are you sure you want to remove this site?")) {
+              const vehicle = this.selectedVehicleData;
+              if (vehicle && vehicle.destinations) {
+                vehicle.destinations.splice(index, 1);
+                
+                // Force refresh after removal
+                this.$nextTick(() => {
+                  this.updateEmissionsChart();
+                });
+              }
+            }
+          },
+
+          addNewVehicle() {
+            if (!this.newVehicle.name.trim()) {
+              alert("Please enter a vehicle name");
+              return;
+            }
+
+            if (!this.newVehicle.homeAddress.trim()) {
+              alert("Please enter a home address");
+              return;
+            }
+
+            if (this.newVehicle.emissionFactor <= 0) {
+              alert("Emission factor must be greater than 0");
+              return;
+            }
+
+            this.vehicles.push(_.cloneDeep(this.newVehicle));
+            this.newVehicle = {
+              name: "",
+              homeAddress: "",
+              emissionFactor: 2.31,
+              consumption: 6.5,
+              studySettings: {
+                studyName: "New Investigation",
+                studyDuration: 5,
+                workingHours: 8
+              },
+              destinations: []
+            };
+            this.showAddVehicleModal = false;
+          },
+
+          removeVehicle(index) {
+            if (this.vehicles.length <= 1) {
+              alert("You must have at least one vehicle");
+              return;
+            }
+
+            if (confirm("Are you sure you want to remove this vehicle?")) {
+              this.vehicles.splice(index, 1);
+              if (this.selectedVehicle >= this.vehicles.length) {
+                this.selectedVehicle = this.vehicles.length - 1;
+              }
+            }
+          },
+
+          // Configuration and session management methods
+          initializeDefaultVehicles() {
+            // Ensure we have at least one properly structured vehicle
+            if (!this.vehicles || this.vehicles.length === 0) {
+              this.vehicles = [
+                {
+                  name: "Field Survey Van",
+                  homeAddress: "123 Engineering Road, City Center",
+                  emissionFactor: 2.31,
+                  consumption: 8.5,
+                  studySettings: {
+                    studyName: "Geotechnical Investigation - Team A",
+                    studyDuration: 5,
+                    workingHours: 8
+                  },
+                  destinations: []
+                }
+              ];
+            } else {
+              // Ensure existing vehicles have the required structure
+              this.vehicles.forEach(vehicle => {
+                if (!vehicle.studySettings) {
+                  vehicle.studySettings = {
+                    studyName: `${vehicle.name} Investigation`,
+                    studyDuration: 5,
+                    workingHours: 8
+                  };
+                }
+                if (!vehicle.destinations) {
+                  vehicle.destinations = [];
+                }
+              });
+            }
+          },
+
+          createEmissionsChart() {
+            const ctx = document.getElementById('emissionsChart');
+            if (!ctx) return;
+
+            // Destroy existing chart if it exists
+            if (this.emissionsChart) {
+              this.emissionsChart.destroy();
+            }
+
+            // Get all vehicle totals (including those with 0 emissions for debugging)
+            const allTotals = this.allVehiclesTotals;
+            console.log('All vehicle totals for chart:', allTotals); // Debug log
+            
+            const vehicleTotals = allTotals.filter(v => v.totalCO2 > 0);
+            console.log('Filtered vehicle totals (>0 CO2):', vehicleTotals); // Debug log
+            
+            if (vehicleTotals.length === 0) {
+              // Show message when no data
+              ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+              const context = ctx.getContext('2d');
+              context.font = '16px Arial';
+              context.fillStyle = '#666';
+              context.textAlign = 'center';
+              context.fillText('No emissions data available', ctx.width / 2, ctx.height / 2);
+              return;
+            }
+
+            // Generate colors for each vehicle
+            const colors = [
+              '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+              '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+            ];
+
+            this.emissionsChart = new Chart(ctx, {
+              type: 'pie',
+              data: {
+                labels: vehicleTotals.map(v => v.name),
+                datasets: [{
+                  data: vehicleTotals.map(v => v.totalCO2),
+                  backgroundColor: colors.slice(0, vehicleTotals.length),
+                  borderWidth: 2,
+                  borderColor: '#fff'
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: {
+                      padding: 20,
+                      usePointStyle: true
+                    }
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        const vehicle = vehicleTotals[context.dataIndex];
+                        const percentage = ((vehicle.totalCO2 / vehicleTotals.reduce((sum, v) => sum + v.totalCO2, 0)) * 100).toFixed(1);
+                        return `${vehicle.name}: ${vehicle.totalCO2.toFixed(2)} kg CO₂ (${percentage}%)`;
+                      },
+                      afterLabel: function(context) {
+                        const vehicle = vehicleTotals[context.dataIndex];
+                        return [
+                          `Sites: ${vehicle.sitesCount}`,
+                          `Distance: ${vehicle.totalDistance.toFixed(2)} km`,
+                          `Fuel: ${vehicle.totalFuel.toFixed(2)} L`
+                        ];
+                      }
+                    }
+                  }
+                },
+                animation: {
+                  animateRotate: true,
+                  animateScale: true
+                }
+              }
+            });
+          },
+
+          updateEmissionsChart() {
+            // Force Vue to update computed properties first
+            this.$forceUpdate();
+            
+            // Delay chart update to ensure DOM and reactivity are ready
+            this.$nextTick(() => {
+              setTimeout(() => {
+                console.log('Updating emissions chart...'); // Debug log
+                this.createEmissionsChart();
+              }, 200); // Increased delay
+            });
+          },
+
+          async loadSessionData() {
+            try {
+              const response = await fetch('./data.json');
+              if (response.ok) {
+                const sessionData = await response.json();
+                
+                // Restore session data if it exists and is valid
+                if (sessionData.lastSession) {
+                  const session = sessionData.lastSession;
+                  
+                  if (session.studyName) this.studyName = session.studyName;
+                  if (session.studyDuration) this.studyDuration = session.studyDuration;
+                  if (session.workingHours) this.workingHours = session.workingHours;
+                  if (session.selectedVehicle !== undefined) this.selectedVehicle = session.selectedVehicle;
+                  
+                  if (session.vehicles && Array.isArray(session.vehicles)) {
+                    this.vehicles = session.vehicles;
+                  }
+                  
+                  if (session.destinations && Array.isArray(session.destinations)) {
+                    this.destinations = session.destinations;
+                  }
+                  
+                  if (session.apiKey) {
+                    this.apiKey = session.apiKey;
+                    localStorage.setItem("googleMapsApiKey", session.apiKey);
+                  }
+                  
+                  console.log('Session data loaded from data.json successfully');
+                }
+                
+                // Load session history
+                if (sessionData.sessionHistory && Array.isArray(sessionData.sessionHistory)) {
+                  this.sessionHistory = sessionData.sessionHistory;
+                }
+              }
+            } catch (error) {
+              console.warn('Could not load session data from data.json:', error);
+              // Fallback to localStorage if data.json is not available
+              this.loadFromLocalStorage();
+            }
+          },
+
+          async saveSessionData() {
+            try {
+              // Prepare session data to save
+              const sessionData = {
+                lastSession: {
+                  selectedVehicle: this.selectedVehicle,
+                  vehicles: this.vehicles,
+                  apiKey: this.apiKey,
+                  timestamp: new Date().toISOString()
+                },
+                sessionHistory: this.sessionHistory || []
+              };
+
+              // Add current session to history if it has meaningful data
+              const hasData = this.vehicles && this.vehicles.some(v => 
+                v.destinations && v.destinations.length > 0
+              );
+              
+              if (hasData) {
+                const historyEntry = {
+                  timestamp: new Date().toISOString(),
+                  vehicles: this.vehicles.map(v => ({
+                    name: v.name || 'Unknown Vehicle',
+                    studyName: (v.studySettings && v.studySettings.studyName) ? v.studySettings.studyName : 'Unknown Study',
+                    totalSites: (v.destinations && v.destinations.length) ? v.destinations.length : 0,
+                    totalDistance: (v.destinations && v.destinations.length) ? 
+                      v.destinations.reduce((total, dest) => total + (dest.roundTripDistance || 0), 0) : 0,
+                    totalFuel: (v.destinations && v.destinations.length) ? 
+                      v.destinations.reduce((total, dest) => total + (dest.fuelUsed || 0), 0) : 0,
+                    totalCO2: (v.destinations && v.destinations.length) ? 
+                      v.destinations.reduce((total, dest) => total + (dest.co2Emissions || 0), 0) : 0
+                  }))
+                };
+                
+                // Add to history and keep only last 10 sessions
+                sessionData.sessionHistory.unshift(historyEntry);
+                sessionData.sessionHistory = sessionData.sessionHistory.slice(0, 10);
+              }
+
+              // Save to localStorage as fallback
+              const dataJson = JSON.stringify(sessionData, null, 2);
+              localStorage.setItem('geocalcSessionData', dataJson);
+              
+              console.log('Session data saved to localStorage');
+            } catch (error) {
+              console.error('Error saving session data:', error);
+            }
+          },
+
+          async saveToFileSystem(dataJson) {
+            try {
+              // This uses the modern File System Access API
+              const fileHandle = await window.showSaveFilePicker({
+                suggestedName: 'data.json',
+                types: [{
+                  description: 'JSON files',
+                  accept: { 'application/json': ['.json'] }
+                }]
+              });
+              
+              const writable = await fileHandle.createWritable();
+              await writable.write(dataJson);
+              await writable.close();
+              
+              console.log('Session data saved to file system');
+            } catch (error) {
+              if (error.name !== 'AbortError') {
+                console.warn('Could not save to file system:', error);
+              }
+            }
+          },
+
+          loadFromLocalStorage() {
+            try {
+              const savedData = localStorage.getItem('geocalcSessionData');
+              if (savedData) {
+                const sessionData = JSON.parse(savedData);
+                
+                if (sessionData.lastSession) {
+                  const session = sessionData.lastSession;
+                  
+                  this.selectedVehicle = session.selectedVehicle || this.selectedVehicle;
+                  
+                  if (session.vehicles && Array.isArray(session.vehicles)) {
+                    this.vehicles = session.vehicles;
+                  }
+                  
+                  if (session.apiKey) {
+                    this.apiKey = session.apiKey;
+                  }
+                }
+                
+                if (sessionData.sessionHistory) {
+                  this.sessionHistory = sessionData.sessionHistory;
+                }
+                
+                console.log('Session data loaded from localStorage');
+              }
+            } catch (error) {
+              console.error('Error loading from localStorage:', error);
+            }
+          },
+
+          exportSessionData() {
+            const sessionData = {
+              selectedVehicle: this.selectedVehicle,
+              vehicles: this.vehicles,
+              exportDate: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(sessionData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `geocalc-session-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+          },
+
+          importSessionData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (event) => {
+              const file = event.target.files[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                  try {
+                    const sessionData = JSON.parse(e.target.result);
+                    
+                    // Validate and import data
+                    if (sessionData.vehicles && Array.isArray(sessionData.vehicles)) {
+                      this.vehicles = sessionData.vehicles;
+                    }
+                    
+                    if (sessionData.selectedVehicle !== undefined) {
+                      this.selectedVehicle = sessionData.selectedVehicle;
+                    }
+                    
+                    alert('Session data imported successfully!');
+                    this.calculateAllDistances();
+                  } catch (error) {
+                    alert('Error importing session data. Please check the file format.');
+                    console.error('Import error:', error);
+                  }
+                };
+                reader.readAsText(file);
+              }
+            };
+            input.click();
+          },
+        },
+      });
+    </script>
+  </body>
+</html>
+</html>
