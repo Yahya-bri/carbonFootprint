@@ -1020,8 +1020,37 @@
           },
 
           selectedVehicle() {
-            this.calculateAllDistances();
+            this.calculateTotals();
+            this.updateMap();
+            this.updateEmissionsChart();
             this.saveSessionData();
+          },
+
+          // Add watcher for destinations changes
+          destinations: {
+            handler() {
+              this.calculateTotals();
+              this.updateEmissionsChart();
+              this.saveSessionData();
+            },
+            deep: true,
+          },
+
+          // Add watcher for grand totals to force chart updates
+          grandTotalCO2() {
+            this.$nextTick(() => {
+              this.updateEmissionsChart();
+            });
+          },
+
+          // Watch for changes in all vehicle totals
+          allVehiclesTotals: {
+            handler() {
+              this.$nextTick(() => {
+                this.updateEmissionsChart();
+              });
+            },
+            deep: true
           },
         },
 
@@ -1355,7 +1384,13 @@
           async calculateAllDistances() {
             const vehicle = this.selectedVehicleData;
             const vehicleDestinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
-            if (vehicleDestinations.length === 0) return;
+            
+            if (vehicleDestinations.length === 0) {
+              // Still update totals and charts even if no destinations
+              this.calculateTotals();
+              this.updateEmissionsChart();
+              return Promise.resolve();
+            }
 
             this.loading = true;
             this.loadingMessage = "Calculating distances...";
@@ -1369,12 +1404,19 @@
                 await this.calculateDistance(vehicleDestinations[i]);
               }
 
+              // Force updates after all calculations
+              this.$forceUpdate();
+              
               this.calculateTotals();
               this.updateMap();
               this.updateEmissionsChart();
+              this.saveSessionData();
+              
+              return Promise.resolve();
             } catch (error) {
               console.error("Error calculating distances:", error);
               alert("Error calculating distances. Please try again.");
+              return Promise.reject(error);
             } finally {
               this.loading = false;
             }
@@ -1395,6 +1437,16 @@
             this.totalCO2 = vehicleDestinations.reduce((total, dest) => {
               return total + (dest.co2Emissions || 0);
             }, 0);
+
+            // Force Vue to update computed properties and trigger reactivity
+            this.$forceUpdate();
+            
+            // Trigger chart update after a short delay to ensure all computed properties are updated
+            this.$nextTick(() => {
+              setTimeout(() => {
+                this.updateEmissionsChart();
+              }, 50);
+            });
           },
 
           addDestination() {
@@ -1453,19 +1505,25 @@
             const vehicleDestinations = vehicle.destinations;
 
             if (this.editingIndex !== null) {
-              vehicleDestinations[this.editingIndex] = _.cloneDeep(
-                this.currentDestination
-              );
+              // Use Vue.set to ensure reactivity
+              this.$set(vehicleDestinations, this.editingIndex, _.cloneDeep(this.currentDestination));
             } else {
               vehicleDestinations.push(_.cloneDeep(this.currentDestination));
             }
 
             this.showDestinationModal = false;
-            this.calculateAllDistances();
             
-            // Force refresh of chart and totals
-            this.$nextTick(() => {
-              this.updateEmissionsChart();
+            // Force immediate recalculation and updates
+            this.calculateAllDistances().then(() => {
+              // Force Vue reactivity updates
+              this.$forceUpdate();
+              
+              // Update all calculations and charts
+              this.$nextTick(() => {
+                this.calculateTotals();
+                this.updateEmissionsChart();
+                this.saveSessionData();
+              });
             });
           },
 
@@ -1473,11 +1531,16 @@
             if (confirm("Are you sure you want to remove this site?")) {
               const vehicle = this.selectedVehicleData;
               if (vehicle && vehicle.destinations) {
-                vehicle.destinations.splice(index, 1);
+                // Use Vue.delete to ensure reactivity
+                this.$delete(vehicle.destinations, index);
                 
-                // Force refresh after removal
+                // Force immediate updates for all components
+                this.$forceUpdate();
+                
                 this.$nextTick(() => {
+                  this.calculateTotals();
                   this.updateEmissionsChart();
+                  this.saveSessionData();
                 });
               }
             }
@@ -1513,6 +1576,11 @@
               destinations: []
             };
             this.showAddVehicleModal = false;
+            
+            // Force immediate chart update after adding vehicle
+            this.$nextTick(() => {
+              this.updateEmissionsChart();
+            });
           },
 
           removeVehicle(index) {
@@ -1526,6 +1594,11 @@
               if (this.selectedVehicle >= this.vehicles.length) {
                 this.selectedVehicle = this.vehicles.length - 1;
               }
+              
+              // Force immediate chart update after removing vehicle
+              this.$nextTick(() => {
+                this.updateEmissionsChart();
+              });
             }
           },
 
@@ -1571,90 +1644,95 @@
             // Destroy existing chart if it exists
             if (this.emissionsChart) {
               this.emissionsChart.destroy();
+              this.emissionsChart = null;
             }
 
-            // Get all vehicle totals (including those with 0 emissions for debugging)
-            const allTotals = this.allVehiclesTotals;
-            console.log('All vehicle totals for chart:', allTotals); // Debug log
+            // Force computed property recalculation
+            this.$forceUpdate();
             
-            const vehicleTotals = allTotals.filter(v => v.totalCO2 > 0);
-            console.log('Filtered vehicle totals (>0 CO2):', vehicleTotals); // Debug log
-            
-            if (vehicleTotals.length === 0) {
-              // Show message when no data
-              ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
-              const context = ctx.getContext('2d');
-              context.font = '16px Arial';
-              context.fillStyle = '#666';
-              context.textAlign = 'center';
-              context.fillText('No emissions data available', ctx.width / 2, ctx.height / 2);
-              return;
-            }
+            // Get all vehicle totals with a slight delay to ensure reactivity has completed
+            setTimeout(() => {
+              const allTotals = this.allVehiclesTotals;
+              console.log('All vehicle totals for chart:', allTotals); // Debug log
+              
+              const vehicleTotals = allTotals.filter(v => v.totalCO2 > 0);
+              console.log('Filtered vehicle totals (>0 CO2):', vehicleTotals); // Debug log
+              
+              if (vehicleTotals.length === 0) {
+                // Show message when no data
+                const context = ctx.getContext('2d');
+                context.clearRect(0, 0, ctx.width, ctx.height);
+                context.font = '16px Arial';
+                context.fillStyle = '#666';
+                context.textAlign = 'center';
+                context.fillText('No emissions data available', ctx.width / 2, ctx.height / 2);
+                return;
+              }
 
-            // Generate colors for each vehicle
-            const colors = [
-              '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
-              '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
-            ];
+              // Generate colors for each vehicle
+              const colors = [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+              ];
 
-            this.emissionsChart = new Chart(ctx, {
-              type: 'pie',
-              data: {
-                labels: vehicleTotals.map(v => v.name),
-                datasets: [{
-                  data: vehicleTotals.map(v => v.totalCO2),
-                  backgroundColor: colors.slice(0, vehicleTotals.length),
-                  borderWidth: 2,
-                  borderColor: '#fff'
-                }]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'bottom',
-                    labels: {
-                      padding: 20,
-                      usePointStyle: true
-                    }
-                  },
-                  tooltip: {
-                    callbacks: {
-                      label: function(context) {
-                        const vehicle = vehicleTotals[context.dataIndex];
-                        const percentage = ((vehicle.totalCO2 / vehicleTotals.reduce((sum, v) => sum + v.totalCO2, 0)) * 100).toFixed(1);
-                        return `${vehicle.name}: ${vehicle.totalCO2.toFixed(2)} kg CO₂ (${percentage}%)`;
-                      },
-                      afterLabel: function(context) {
-                        const vehicle = vehicleTotals[context.dataIndex];
-                        return [
-                          `Sites: ${vehicle.sitesCount}`,
-                          `Distance: ${vehicle.totalDistance.toFixed(2)} km`,
-                          `Fuel: ${vehicle.totalFuel.toFixed(2)} L`
-                        ];
+              this.emissionsChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                  labels: vehicleTotals.map(v => v.name),
+                  datasets: [{
+                    data: vehicleTotals.map(v => v.totalCO2),
+                    backgroundColor: colors.slice(0, vehicleTotals.length),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                  }]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: 'bottom',
+                      labels: {
+                        padding: 20,
+                        usePointStyle: true
+                      }
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function(context) {
+                          const vehicle = vehicleTotals[context.dataIndex];
+                          const percentage = ((vehicle.totalCO2 / vehicleTotals.reduce((sum, v) => sum + v.totalCO2, 0)) * 100).toFixed(1);
+                          return `${vehicle.name}: ${vehicle.totalCO2.toFixed(2)} kg CO₂ (${percentage}%)`;
+                        },
+                        afterLabel: function(context) {
+                          const vehicle = vehicleTotals[context.dataIndex];
+                          return [
+                            `Sites: ${vehicle.sitesCount}`,
+                            `Distance: ${vehicle.totalDistance.toFixed(2)} km`,
+                            `Fuel: ${vehicle.totalFuel.toFixed(2)} L`
+                          ];
+                        }
                       }
                     }
+                  },
+                  animation: {
+                    animateRotate: true,
+                    animateScale: true
                   }
-                },
-                animation: {
-                  animateRotate: true,
-                  animateScale: true
                 }
-              }
-            });
+              });
+            }, 10);
           },
 
           updateEmissionsChart() {
+            console.log('Updating emissions chart...'); // Debug log
+            
             // Force Vue to update computed properties first
             this.$forceUpdate();
             
             // Delay chart update to ensure DOM and reactivity are ready
             this.$nextTick(() => {
-              setTimeout(() => {
-                console.log('Updating emissions chart...'); // Debug log
-                this.createEmissionsChart();
-              }, 200); // Increased delay
+              this.createEmissionsChart();
             });
           },
 
