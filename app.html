@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Geotechnical Study Carbon Footprint Calculator</title>
+    <title>Calculateur d'Empreinte Carbone pour Études Géotechniques</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
@@ -84,16 +84,16 @@
       >
         <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
           <h2 class="text-2xl font-bold text-gray-800 mb-4">
-            Google Maps API Key Required
+            Clé API Google Maps Requise
           </h2>
           <p class="text-gray-600 mb-6">
-            Please enter your Google Maps API key to use the distance
-            calculation features.
+            Veuillez saisir votre clé API Google Maps pour utiliser les
+            fonctionnalités de calcul de distance.
           </p>
           <input
             v-model="apiKey"
             type="text"
-            placeholder="Enter your API key"
+            placeholder="Saisissez votre clé API"
             class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             @keyup.enter="saveApiKey"
           />
@@ -102,17 +102,17 @@
               @click="saveApiKey"
               class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Save Key
+              Enregistrer la Clé
             </button>
             <button
               @click="useDemoModeMethod"
               class="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
             >
-              Demo Mode
+              Mode Démo
             </button>
           </div>
           <p class="text-xs text-gray-500 mt-4">
-            Don't have a key? You can get one at
+            Vous n'avez pas de clé ? Vous pouvez en obtenir une sur
             <a
               href="https://developers.google.com/maps/documentation/javascript/get-api-key"
               target="_blank"
@@ -127,17 +127,17 @@
       <div class="container mx-auto px-4 py-8">
         <header class="text-center mb-8">
           <h1 class="text-4xl font-bold text-gray-800 mb-2">
-            Geotechnical Study Carbon Footprint Calculator
+            Calculateur d'Empreinte Carbone pour Études Géotechniques
           </h1>
           <p class="text-lg text-gray-600">
-            Plan your field measurements and calculate transportation emissions
+            Planifiez vos mesures de terrain et calculez les émissions de transport
           </p>
           
           <!-- Configuration Status Indicators -->
           <div class="flex justify-center space-x-4 mt-4">
             <div class="flex items-center text-sm">
               <div class="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
-              <span class="text-gray-600">Session data available</span>
+              <span class="text-gray-600">Données de session disponibles</span>
             </div>
           </div>
         </header>
@@ -163,7 +163,7 @@
                     d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                   ></path>
                 </svg>
-                Vehicle Management
+                Gestion des Véhicules
               </h2>
 
               <div
@@ -182,7 +182,7 @@
                       class="text-blue-500 hover:text-blue-700 text-sm"
                       v-if="selectedVehicle !== index"
                     >
-                      Select
+                      Sélectionner
                     </button>
                     <button
                       @click="removeVehicle(index)"
@@ -193,21 +193,21 @@
                   </div>
                 </div>
                 <p class="text-sm text-gray-600 mb-1">
-                  <strong>Study:</strong> {{ vehicle.studySettings ? vehicle.studySettings.studyName : 'Not configured' }}
+                  <strong>Étude:</strong> {{ vehicle.studySettings ? vehicle.studySettings.studyName : 'Non configuré' }}
                 </p>
                 <p class="text-sm text-gray-600 mb-1">
-                  <strong>Home:</strong> {{ vehicle.homeAddress || 'Not specified' }}
+                  <strong>Base:</strong> {{ vehicle.homeAddress || 'Non spécifié' }}
                 </p>
                 <p class="text-sm text-gray-600 mb-1">
-                  <strong>Emission:</strong> {{ vehicle.emissionFactor || 0 }} kg
+                  <strong>Émission:</strong> {{ vehicle.emissionFactor || 0 }} kg
                   CO₂/L
                 </p>
                 <p class="text-sm text-gray-600 mb-1">
-                  <strong>Consumption:</strong> {{ vehicle.consumption || 0 }}
+                  <strong>Consommation:</strong> {{ vehicle.consumption || 0 }}
                   L/100km
                 </p>
                 <p class="text-sm text-gray-600">
-                  <strong>Sites:</strong> {{ vehicle.destinations ? vehicle.destinations.length : 0 }} assigned
+                  <strong>Sites:</strong> {{ vehicle.destinations ? vehicle.destinations.length : 0 }} assignés
                 </p>
               </div>
 
@@ -229,7 +229,7 @@
                     d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                   ></path>
                 </svg>
-                Add Vehicle
+                Ajouter un Véhicule
               </button>
             </div>
 
@@ -240,9 +240,9 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
-                Vehicle Settings
+                Paramètres du Véhicule
                 <span class="text-sm font-normal text-gray-500 ml-2">
-                  {{ selectedVehicleData ? selectedVehicleData.name : 'No Vehicle Selected' }}
+                  {{ selectedVehicleData ? selectedVehicleData.name : 'Aucun véhicule sélectionné' }}
                 </span>
               </h2>
 
@@ -252,35 +252,35 @@
                   <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                   </svg>
-                  Vehicle Configuration
+                  Configuration du Véhicule
                 </h3>
                 
                 <div class="space-y-4">
                   <div>
-                    <label class="block text-sm font-medium text-blue-700 mb-1">Vehicle Name</label>
+                    <label class="block text-sm font-medium text-blue-700 mb-1">Nom du Véhicule</label>
                     <input
                       v-if="selectedVehicleData"
                       v-model="selectedVehicleData.name"
                       type="text"
                       class="w-full p-3 text-sm border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                      placeholder="Enter vehicle name"
+                      placeholder="Saisissez le nom du véhicule"
                     />
                   </div>
                   
                   <div>
-                    <label class="block text-sm font-medium text-blue-700 mb-1">Home/Base Address</label>
+                    <label class="block text-sm font-medium text-blue-700 mb-1">Adresse de Base/Siège</label>
                     <input
                       v-if="selectedVehicleData"
                       v-model="selectedVehicleData.homeAddress"
                       type="text"
                       class="w-full p-3 text-sm border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                      placeholder="Enter home base address"
+                      placeholder="Saisissez l'adresse de base"
                     />
                   </div>
                   
                   <div class="grid grid-cols-2 gap-3">
                     <div>
-                      <label class="block text-sm font-medium text-blue-700 mb-1">Emission Factor (kg CO₂/L)</label>
+                      <label class="block text-sm font-medium text-blue-700 mb-1">Facteur d'Émission (kg CO₂/L)</label>
                       <input
                         v-if="selectedVehicleData"
                         v-model.number="selectedVehicleData.emissionFactor"
@@ -292,7 +292,7 @@
                     </div>
                     
                     <div>
-                      <label class="block text-sm font-medium text-blue-700 mb-1">Fuel Consumption (L/100km)</label>
+                      <label class="block text-sm font-medium text-blue-700 mb-1">Consommation de Carburant (L/100km)</label>
                       <input
                         v-if="selectedVehicleData"
                         v-model.number="selectedVehicleData.consumption"
@@ -305,7 +305,7 @@
                   </div>
                   
                   <div class="text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">
-                    <strong>💡 Tip:</strong> After changing emission factor or consumption values, click "Recalculate Distances" to update CO₂ emissions for existing sites.
+                    <strong>💡 Conseil :</strong> Après avoir modifié les valeurs du facteur d'émission ou de consommation, cliquez sur "Recalculer les Distances" pour mettre à jour les émissions de CO₂ pour les sites existants.
                   </div>
                 </div>
               </div>
@@ -316,23 +316,23 @@
                   <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
                   </svg>
-                  Study Configuration
+                  Configuration de l'Étude
                 </h3>
                 
                 <div class="space-y-4">
                   <div>
-                    <label class="block text-sm font-medium text-green-700 mb-1">Study Name</label>
+                    <label class="block text-sm font-medium text-green-700 mb-1">Nom de l'Étude</label>
                     <input
                       v-model="studyName"
                       type="text"
                       class="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
-                      placeholder="e.g., Site Investigation Project"
+                      placeholder="ex: Projet d'Investigation de Site"
                     />
                   </div>
 
                   <div class="grid grid-cols-2 gap-3">
                     <div>
-                      <label class="block text-sm font-medium text-green-700 mb-1">Duration (days)</label>
+                      <label class="block text-sm font-medium text-green-700 mb-1">Durée (jours)</label>
                       <input
                         v-model.number="studyDuration"
                         type="number"
@@ -342,14 +342,14 @@
                     </div>
                     
                     <div>
-                      <label class="block text-sm font-medium text-green-700 mb-1">Working Hours per Day</label>
+                      <label class="block text-sm font-medium text-green-700 mb-1">Heures de Travail par Jour</label>
                       <select
                         v-model="workingHours"
                         class="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
                       >
-                        <option value="8">8 hours</option>
-                        <option value="10">10 hours</option>
-                        <option value="12">12 hours</option>
+                        <option value="8">8 heures</option>
+                        <option value="10">10 heures</option>
+                        <option value="12">12 heures</option>
                       </select>
                     </div>
                   </div>
@@ -362,7 +362,7 @@
                   <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
                   </svg>
-                  Session Management
+                  Gestion des Sessions
                 </h3>
                 
                 <div class="space-y-3">
@@ -373,7 +373,7 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    Export Session Data
+                    Exporter les Données de Session
                   </button>
                   
                   <button
@@ -383,7 +383,7 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
                     </svg>
-                    Import Session Data
+                    Importer les Données de Session
                   </button>
                   
                   <button
@@ -393,24 +393,24 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
                     </svg>
-                    Load from Browser Storage
+                    Charger depuis le Stockage du Navigateur
                   </button>
                 </div>
 
                 <!-- Session History -->
                 <div v-if="sessionHistory.length > 0" class="mt-4">
-                  <h4 class="text-sm font-medium text-gray-700 mb-2">Recent Sessions</h4>
+                  <h4 class="text-sm font-medium text-gray-700 mb-2">Sessions Récentes</h4>
                   <div class="max-h-32 overflow-y-auto">
                     <div
                       v-for="(session, index) in sessionHistory.slice(0, 5)"
                       :key="index"
                       class="text-xs text-gray-600 p-2 bg-gray-50 rounded mb-1"
                     >
-                      <div class="font-medium">Multi-Vehicle Session</div>
+                      <div class="font-medium">Session Multi-Véhicules</div>
                       <div v-for="vehicle in session.vehicles" :key="vehicle.name">
                         {{ vehicle.name }}: {{ vehicle.totalSites }} sites, {{ vehicle.totalCO2.toFixed(1) }} kg CO₂
                       </div>
-                      <div class="text-gray-500">{{ new Date(session.timestamp).toLocaleDateString() }}</div>
+                      <div class="text-gray-500">{{ new Date(session.timestamp).toLocaleDateString('fr-FR') }}</div>
                     </div>
                   </div>
                 </div>
@@ -424,10 +424,10 @@
               <div class="flex justify-between items-center mb-6">
                 <div>
                   <h2 class="text-2xl font-semibold text-gray-800">
-                    Field Sites for {{ selectedVehicleData ? selectedVehicleData.name : 'No Vehicle Selected' }}
+                    Sites de Terrain pour {{ selectedVehicleData ? selectedVehicleData.name : 'Aucun véhicule sélectionné' }}
                   </h2>
                   <p class="text-sm text-gray-600">
-                    {{ selectedVehicleData && selectedVehicleData.studySettings ? selectedVehicleData.studySettings.studyName : 'No study configured' }}
+                    {{ selectedVehicleData && selectedVehicleData.studySettings ? selectedVehicleData.studySettings.studyName : 'Aucune étude configurée' }}
                   </p>
                 </div>
                 <div class="flex space-x-2">
@@ -449,7 +449,7 @@
                         d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                       ></path>
                     </svg>
-                    Add Site
+                    Ajouter un Site
                   </button>
                   <button
                     @click="calculateAllDistances"
@@ -469,7 +469,7 @@
                         d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                       ></path>
                     </svg>
-                    Calculate All
+                    Calculer Tout
                   </button>
                 </div>
               </div>
@@ -495,13 +495,13 @@
                         @click="editDestination(index)"
                         class="text-blue-600 hover:text-blue-800 text-sm"
                       >
-                        Edit
+                        Modifier
                       </button>
                       <button
                         @click="removeDestination(index)"
                         class="text-red-600 hover:text-red-800 text-sm"
                       >
-                        Remove
+                        Supprimer
                       </button>
                     </div>
                   </div>
@@ -509,31 +509,31 @@
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
                       <p class="text-gray-600" v-if="destination.name">
-                        <strong>Name:</strong> {{ destination.name }}
+                        <strong>Nom :</strong> {{ destination.name }}
                       </p>
                       <p class="text-gray-600">
-                        <strong>Address:</strong> {{ destination.address }}
+                        <strong>Adresse :</strong> {{ destination.address }}
                       </p>
                       <p class="text-gray-600">
-                        <strong>Measurements:</strong> {{
+                        <strong>Mesures :</strong> {{
                         destination.measurements }}
                       </p>
                       <p class="text-gray-600">
-                        <strong>Duration:</strong> {{ destination.duration }} hours
+                        <strong>Durée :</strong> {{ destination.duration }} heures
                       </p>
                     </div>
                     <div>
                       <p class="text-gray-600">
-                        <strong>Distance:</strong> {{ getDistanceText(destination) }}
+                        <strong>Distance :</strong> {{ getDistanceText(destination) }}
                       </p>
                       <p class="text-gray-600">
-                        <strong>Round Trip:</strong> {{ getRoundTripText(destination) }}
+                        <strong>Aller-Retour :</strong> {{ getRoundTripText(destination) }}
                       </p>
                       <p class="text-gray-600">
-                        <strong>Fuel Used:</strong> {{ getFuelUsedText(destination) }}
+                        <strong>Carburant Utilisé :</strong> {{ getFuelUsedText(destination) }}
                       </p>
                       <p class="text-gray-600">
-                        <strong>CO₂ Emissions:</strong> {{ getCO2EmissionsText(destination) }}
+                        <strong>Émissions CO₂ :</strong> {{ getCO2EmissionsText(destination) }}
                       </p>
                     </div>
                   </div>
@@ -545,7 +545,7 @@
                         :key="day"
                         class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
                       >
-                        Day {{ day }}
+                        Jour {{ day }}
                       </span>
                     </div>
                   </div>
@@ -576,8 +576,8 @@
                     ></path>
                   </svg>
                   <p class="text-lg">
-                    No sites added yet. Click "Add Site" to begin planning your
-                    field measurements.
+                    Aucun site ajouté pour l'instant. Cliquez sur "Ajouter un Site" pour commencer à planifier vos
+                    mesures de terrain.
                   </p>
                 </div>
               </div>
@@ -591,7 +591,7 @@
               <!-- Overall Project Summary with Pie Chart -->
               <div class="mt-8 pt-6 border-t border-gray-200">
                 <h3 class="text-xl font-semibold text-gray-800 mb-6">
-                  Overall Project Emissions Summary
+                  Résumé Global des Émissions du Projet
                 </h3>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -599,13 +599,13 @@
                   <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                       <div class="bg-blue-50 p-4 rounded-lg">
-                        <h4 class="font-semibold text-blue-800 text-sm">Total Distance</h4>
+                        <h4 class="font-semibold text-blue-800 text-sm">Distance Totale</h4>
                         <p class="text-xl font-bold text-blue-600">
                           {{ grandTotalDistance.toFixed(2) }} km
                         </p>
                       </div>
                       <div class="bg-yellow-50 p-4 rounded-lg">
-                        <h4 class="font-semibold text-yellow-800 text-sm">Total Fuel</h4>
+                        <h4 class="font-semibold text-yellow-800 text-sm">Carburant Total</h4>
                         <p class="text-xl font-bold text-yellow-600">
                           {{ grandTotalFuel.toFixed(2) }} L
                         </p>
@@ -613,7 +613,7 @@
                     </div>
                     
                     <div class="bg-red-50 p-4 rounded-lg">
-                      <h4 class="font-semibold text-red-800">Total CO₂ Emissions</h4>
+                      <h4 class="font-semibold text-red-800">Émissions CO₂ Totales</h4>
                       <p class="text-3xl font-bold text-red-600">
                         {{ grandTotalCO2.toFixed(2) }} kg
                       </p>
@@ -621,7 +621,7 @@
 
                     <!-- Vehicle Breakdown Table -->
                     <div class="bg-gray-50 p-4 rounded-lg">
-                      <h4 class="font-semibold text-gray-800 mb-3">Vehicle Breakdown</h4>
+                      <h4 class="font-semibold text-gray-800 mb-3">Répartition par Véhicule</h4>
                       <div class="space-y-2">
                         <div
                           v-for="(vehicle, index) in allVehiclesTotals"
@@ -641,15 +641,15 @@
                       
                       <!-- Debug info - will remove after fixing -->
                       <div class="mt-4 p-2 bg-yellow-100 rounded text-xs">
-                        <strong>Debug:</strong> Found {{ allVehiclesTotals.length }} vehicles, 
-                        Grand Total: {{ grandTotalCO2.toFixed(2) }} kg CO₂
+                        <strong>Debug :</strong> {{ allVehiclesTotals.length }} véhicules trouvés, 
+                        Total Global : {{ grandTotalCO2.toFixed(2) }} kg CO₂
                       </div>
                     </div>
                   </div>
                   
                   <!-- Pie Chart -->
                   <div class="bg-white p-4 rounded-lg border">
-                    <h4 class="font-semibold text-gray-800 mb-4 text-center">CO₂ Emissions Distribution</h4>
+                    <h4 class="font-semibold text-gray-800 mb-4 text-center">Répartition des Émissions CO₂</h4>
                     <div class="relative" style="height: 300px;">
                       <canvas id="emissionsChart"></canvas>
                     </div>
@@ -663,29 +663,29 @@
                 class="mt-8 pt-6 border-t border-gray-200"
               >
                 <h3 class="text-xl font-semibold text-gray-800 mb-4">
-                  Summary for {{ selectedVehicleData ? selectedVehicleData.name : 'No Vehicle Selected' }}
+                  Résumé pour {{ selectedVehicleData ? selectedVehicleData.name : 'Aucun véhicule sélectionné' }}
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div class="bg-blue-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-blue-800">Total Distance</h4>
+                    <h4 class="font-semibold text-blue-800">Distance Totale</h4>
                     <p class="text-2xl font-bold text-blue-600">
                       {{ totalDistance.toFixed(2) }} km
                     </p>
                   </div>
                   <div class="bg-yellow-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-yellow-800">Total Fuel</h4>
+                    <h4 class="font-semibold text-yellow-800">Carburant Total</h4>
                     <p class="text-2xl font-bold text-yellow-600">
                       {{ totalFuel.toFixed(2) }} L
                     </p>
                   </div>
                   <div class="bg-green-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-green-800">Total CO₂</h4>
+                    <h4 class="font-semibold text-green-800">CO₂ Total</h4>
                     <p class="text-2xl font-bold text-green-600">
                       {{ totalCO2.toFixed(2) }} kg
                     </p>
                   </div>
                   <div class="bg-purple-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-purple-800">Assigned Sites</h4>
+                    <h4 class="font-semibold text-purple-800">Sites Assignés</h4>
                     <p class="text-2xl font-bold text-purple-600">
                       {{ destinations.length }}
                     </p>
@@ -706,51 +706,51 @@
           class="bg-white p-8 rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto"
         >
           <h2 class="text-2xl font-bold text-gray-800 mb-6">
-            {{ editingIndex !== null ? 'Edit Site' : 'Add New Site' }}
+            {{ editingIndex !== null ? 'Modifier le Site' : 'Ajouter un Nouveau Site' }}
           </h2>
 
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Site Name</label
+                >Nom du Site</label
               >
               <input
                 v-model="currentDestination.name"
                 type="text"
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter a short name for this site (e.g., Site A, Borehole 1)"
+                placeholder="Saisissez un nom court pour ce site (ex: Site A, Forage 1)"
               />
             </div>
             
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Site Address</label
+                >Adresse du Site</label
               >
               <input
                 v-model="currentDestination.address"
                 type="text"
                 ref="addressInput"
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter site address"
+                placeholder="Saisissez l'adresse du site"
               />
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Measurements to Perform</label
+                >Mesures à Effectuer</label
               >
               <textarea
                 v-model="currentDestination.measurements"
                 rows="3"
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Describe the geotechnical measurements to be performed"
+                placeholder="Décrivez les mesures géotechniques à effectuer"
               ></textarea>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Duration (hours)</label
+                  >Durée (heures)</label
                 >
                 <input
                   v-model.number="currentDestination.duration"
@@ -762,7 +762,7 @@
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Visit Days</label
+                  >Jours de Visite</label
                 >
                 <div class="flex flex-wrap gap-2">
                   <div
@@ -778,7 +778,7 @@
                       class="mr-1"
                     />
                     <label :for="'day-' + day" class="text-sm"
-                      >Day {{ day }}</label
+                      >Jour {{ day }}</label
                     >
                   </div>
                 </div>
@@ -791,13 +791,13 @@
               @click="showDestinationModal = false"
               class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               @click="saveDestination"
               class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Save Site
+              Enregistrer le Site
             </button>
           </div>
         </div>
@@ -809,37 +809,37 @@
         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       >
         <div class="bg-white p-8 rounded-lg shadow-xl max-w-lg w-full max-h-screen overflow-y-auto">
-          <h2 class="text-2xl font-bold text-gray-800 mb-6">Add New Vehicle</h2>
+          <h2 class="text-2xl font-bold text-gray-800 mb-6">Ajouter un Nouveau Véhicule</h2>
 
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Vehicle Name</label
+                >Nom du Véhicule</label
               >
               <input
                 v-model="newVehicle.name"
                 type="text"
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., Field Survey Van"
+                placeholder="ex: Camionnette d'Enquête de Terrain"
               />
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Home Address</label
+                >Adresse de Base</label
               >
               <input
                 v-model="newVehicle.homeAddress"
                 type="text"
                 class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter home base address"
+                placeholder="Saisissez l'adresse de base"
               />
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Emission Factor (kg CO₂/L)</label
+                  >Facteur d'Émission (kg CO₂/L)</label
                 >
                 <input
                   v-model.number="newVehicle.emissionFactor"
@@ -851,7 +851,7 @@
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Fuel Consumption (L/100km)</label
+                  >Consommation de Carburant (L/100km)</label
                 >
                 <input
                   v-model.number="newVehicle.consumption"
@@ -865,25 +865,25 @@
 
             <!-- Study Settings for the new vehicle -->
             <div class="pt-4 border-t border-gray-200">
-              <h3 class="text-lg font-medium text-gray-800 mb-3">Study Settings</h3>
+              <h3 class="text-lg font-medium text-gray-800 mb-3">Paramètres de l'Étude</h3>
               
               <div class="space-y-3">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1"
-                    >Study Name</label
+                    >Nom de l'Étude</label
                   >
                   <input
                     v-model="newVehicle.studySettings.studyName"
                     type="text"
                     class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., Site Investigation Project"
+                    placeholder="ex: Projet d'Investigation de Site"
                   />
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1"
-                      >Duration (days)</label
+                      >Durée (jours)</label
                     >
                     <input
                       v-model.number="newVehicle.studySettings.studyDuration"
@@ -894,15 +894,15 @@
                   </div>
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1"
-                      >Working Hours/Day</label
+                      >Heures de Travail/Jour</label
                     >
                     <select
                       v-model="newVehicle.studySettings.workingHours"
                       class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="8">8 hours</option>
-                      <option value="10">10 hours</option>
-                      <option value="12">12 hours</option>
+                      <option value="8">8 heures</option>
+                      <option value="10">10 heures</option>
+                      <option value="12">12 heures</option>
                     </select>
                   </div>
                 </div>
@@ -915,13 +915,13 @@
               @click="showAddVehicleModal = false"
               class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               @click="addNewVehicle"
               class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Add Vehicle
+              Ajouter le Véhicule
             </button>
           </div>
         </div>
@@ -935,7 +935,7 @@
         data: {
           // Application state
           loading: false,
-          loadingMessage: "Initializing...",
+          loadingMessage: "Initialisation...",
           apiKey: "",
           showApiKeyModal: true,
           isDemoMode: false,
@@ -1181,25 +1181,25 @@
           getDistanceText(destination) {
             return destination.distance 
               ? destination.distance.toFixed(2) + ' km' 
-              : 'Not calculated';
+              : 'Non calculé';
           },
 
           getRoundTripText(destination) {
             return destination.roundTripDistance 
               ? destination.roundTripDistance.toFixed(2) + ' km' 
-              : 'Not calculated';
+              : 'Non calculé';
           },
 
           getFuelUsedText(destination) {
             return destination.fuelUsed 
               ? destination.fuelUsed.toFixed(2) + ' L' 
-              : 'Not calculated';
+              : 'Non calculé';
           },
 
           getCO2EmissionsText(destination) {
             return destination.co2Emissions 
               ? destination.co2Emissions.toFixed(2) + ' kg' 
-              : 'Not calculated';
+              : 'Non calculé';
           },
 
           loadApiKey() {
@@ -1220,7 +1220,7 @@
               this.showApiKeyModal = false;
               this.initGoogleMaps();
             } else {
-              alert("Please enter a valid API key");
+              alert("Veuillez saisir une clé API valide");
             }
           },
 
@@ -1255,7 +1255,7 @@
             
             script.onerror = () => {
               alert(
-                "Failed to load Google Maps. Please check your API key and internet connection."
+                "Échec du chargement de Google Maps. Veuillez vérifier votre clé API et votre connexion Internet."
               );
               this.isDemoMode = true;
               this.setupDemoData();
@@ -1274,8 +1274,8 @@
                     <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m0 0L9 7"></path>
                     </svg>
-                    <p class="text-lg font-medium">Demo Mode</p>
-                    <p class="text-sm">Map functionality requires Google Maps API</p>
+                    <p class="text-lg font-medium">Mode Démo</p>
+                    <p class="text-sm">La fonctionnalité de carte nécessite l'API Google Maps</p>
                   </div>
                 </div>
               `;
@@ -1503,12 +1503,12 @@
             }
 
             this.loading = true;
-            this.loadingMessage = "Calculating distances...";
+            this.loadingMessage = "Calcul des distances...";
 
             try {
               // Calculate distance for each destination
               for (let i = 0; i < vehicleDestinations.length; i++) {
-                this.loadingMessage = `Calculating distance ${i + 1} of ${
+                this.loadingMessage = `Calcul de la distance ${i + 1} sur ${
                   vehicleDestinations.length
                 }...`;
                 await this.calculateDistance(vehicleDestinations[i]);
@@ -1525,7 +1525,7 @@
               return Promise.resolve();
             } catch (error) {
               console.error("Error calculating distances:", error);
-              alert("Error calculating distances. Please try again.");
+              alert("Erreur lors du calcul des distances. Veuillez réessayer.");
               return Promise.reject(error);
             } finally {
               this.loading = false;
@@ -1597,12 +1597,12 @@
 
           saveDestination() {
             if (!this.currentDestination.address.trim()) {
-              alert("Please enter a site address");
+              alert("Veuillez saisir une adresse de site");
               return;
             }
 
             if (this.currentDestination.days.length === 0) {
-              alert("Please select at least one day for the site visit");
+              alert("Veuillez sélectionner au moins un jour pour la visite du site");
               return;
             }
 
@@ -1616,7 +1616,7 @@
             // Work with current vehicle's destinations
             const vehicle = this.selectedVehicleData;
             if (!vehicle || !vehicle.destinations) {
-              alert("No vehicle selected or vehicle data is incomplete");
+              alert("Aucun véhicule sélectionné ou les données du véhicule sont incomplètes");
               return;
             }
 
@@ -1646,7 +1646,7 @@
           },
 
           removeDestination(index) {
-            if (confirm("Are you sure you want to remove this site?")) {
+            if (confirm("Êtes-vous sûr de vouloir supprimer ce site ?")) {
               const vehicle = this.selectedVehicleData;
               if (vehicle && vehicle.destinations) {
                 // Use Vue.delete to ensure reactivity
@@ -1666,17 +1666,17 @@
 
           addNewVehicle() {
             if (!this.newVehicle.name.trim()) {
-              alert("Please enter a vehicle name");
+              alert("Veuillez saisir un nom de véhicule");
               return;
             }
 
             if (!this.newVehicle.homeAddress.trim()) {
-              alert("Please enter a home address");
+              alert("Veuillez saisir une adresse de base");
               return;
             }
 
             if (this.newVehicle.emissionFactor <= 0) {
-              alert("Emission factor must be greater than 0");
+              alert("Le facteur d'émission doit être supérieur à 0");
               return;
             }
 
@@ -1703,11 +1703,11 @@
 
           removeVehicle(index) {
             if (this.vehicles.length <= 1) {
-              alert("You must have at least one vehicle");
+              alert("Vous devez avoir au moins un véhicule");
               return;
             }
 
-            if (confirm("Are you sure you want to remove this vehicle?")) {
+            if (confirm("Êtes-vous sûr de vouloir supprimer ce véhicule ?")) {
               this.vehicles.splice(index, 1);
               if (this.selectedVehicle >= this.vehicles.length) {
                 this.selectedVehicle = this.vehicles.length - 1;
@@ -1783,7 +1783,7 @@
                 context.font = '16px Arial';
                 context.fillStyle = '#666';
                 context.textAlign = 'center';
-                context.fillText('No emissions data available', ctx.width / 2, ctx.height / 2);
+                context.fillText('Aucune donnée d\'émissions disponible', ctx.width / 2, ctx.height / 2);
                 return;
               }
 
@@ -1827,7 +1827,7 @@
                           return [
                             `Sites: ${vehicle.sitesCount}`,
                             `Distance: ${vehicle.totalDistance.toFixed(2)} km`,
-                            `Fuel: ${vehicle.totalFuel.toFixed(2)} L`
+                            `Carburant: ${vehicle.totalFuel.toFixed(2)} L`
                           ];
                         }
                       }
@@ -2041,10 +2041,10 @@
                       this.selectedVehicle = sessionData.selectedVehicle;
                     }
                     
-                    alert('Session data imported successfully!');
+                    alert('Données de session importées avec succès !');
                     this.calculateAllDistances();
                   } catch (error) {
-                    alert('Error importing session data. Please check the file format.');
+                    alert('Erreur lors de l\'importation des données de session. Veuillez vérifier le format du fichier.');
                     console.error('Import error:', error);
                   }
                 };
