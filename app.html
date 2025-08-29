@@ -1244,28 +1244,62 @@
           
           // All vehicles totals for pie chart
           allVehiclesTotals() {
-            // Force reactivity by accessing vehicles array length
-            const vehiclesCount = this.vehicles.length;
-            
-            return this.vehicles.map((vehicle, index) => {
-              const destinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
-              // Force reactivity by accessing destinations array length
-              const destinationsCount = destinations.length;
+            try {
+              // Force reactivity by accessing vehicles array length
+              const vehiclesCount = this.vehicles ? this.vehicles.length : 0;
               
-              const totalCO2 = destinations.reduce((total, dest) => total + (dest.co2Emissions || 0), 0);
-              const totalDistance = destinations.reduce((total, dest) => total + (dest.roundTripDistance || 0), 0);
-              const totalFuel = destinations.reduce((total, dest) => total + (dest.fuelUsed || 0), 0);
-              
-              return {
-                name: vehicle.name || 'Unknown Vehicle',
-                studyName: (vehicle.studySettings && vehicle.studySettings.studyName) ? vehicle.studySettings.studyName : 'No Study',
-                totalCO2: totalCO2,
-                totalDistance: totalDistance,
-                totalFuel: totalFuel,
-                sitesCount: destinations.length,
-                vehicleIndex: index // Add index for debugging
-              };
-            });
+              if (!this.vehicles || !Array.isArray(this.vehicles)) {
+                console.warn('Vehicles is not an array:', this.vehicles);
+                return [];
+              }
+
+              return this.vehicles.map((vehicle, index) => {
+                try {
+                  const destinations = (vehicle && vehicle.destinations && Array.isArray(vehicle.destinations)) ? vehicle.destinations : [];
+                  // Force reactivity by accessing destinations array length
+                  const destinationsCount = destinations.length;
+                  
+                  const totalCO2 = destinations.reduce((total, dest) => {
+                    const co2 = dest && typeof dest.co2Emissions === 'number' ? dest.co2Emissions : 0;
+                    return total + co2;
+                  }, 0);
+                  
+                  const totalDistance = destinations.reduce((total, dest) => {
+                    const distance = dest && typeof dest.roundTripDistance === 'number' ? dest.roundTripDistance : 0;
+                    return total + distance;
+                  }, 0);
+                  
+                  const totalFuel = destinations.reduce((total, dest) => {
+                    const fuel = dest && typeof dest.fuelUsed === 'number' ? dest.fuelUsed : 0;
+                    return total + fuel;
+                  }, 0);
+                  
+                  return {
+                    name: (vehicle && vehicle.name) ? vehicle.name : `Vehicle ${index + 1}`,
+                    studyName: (vehicle && vehicle.studySettings && vehicle.studySettings.studyName) ? vehicle.studySettings.studyName : 'No Study',
+                    totalCO2: isNaN(totalCO2) ? 0 : totalCO2,
+                    totalDistance: isNaN(totalDistance) ? 0 : totalDistance,
+                    totalFuel: isNaN(totalFuel) ? 0 : totalFuel,
+                    sitesCount: destinations.length,
+                    vehicleIndex: index // Add index for debugging
+                  };
+                } catch (vehicleError) {
+                  console.error('Error processing vehicle at index', index, ':', vehicleError);
+                  return {
+                    name: `Vehicle ${index + 1}`,
+                    studyName: 'Error',
+                    totalCO2: 0,
+                    totalDistance: 0,
+                    totalFuel: 0,
+                    sitesCount: 0,
+                    vehicleIndex: index
+                  };
+                }
+              });
+            } catch (error) {
+              console.error('Error in allVehiclesTotals computed property:', error);
+              return [];
+            }
           },
           
           grandTotalCO2() {
@@ -2527,102 +2561,143 @@
           },
 
           createEmissionsChart() {
-            const ctx = document.getElementById('emissionsChart');
-            if (!ctx) return;
-
-            // Destroy existing chart if it exists
-            if (this.emissionsChart) {
-              this.emissionsChart.destroy();
-              this.emissionsChart = null;
-            }
-
-            // Force computed property recalculation
-            this.$forceUpdate();
-            
-            // Get all vehicle totals with a slight delay to ensure reactivity has completed
-            setTimeout(() => {
-              const allTotals = this.allVehiclesTotals;
-              console.log('All vehicle totals for chart:', allTotals); // Debug log
-              
-              const vehicleTotals = allTotals.filter(v => v.totalCO2 > 0);
-              console.log('Filtered vehicle totals (>0 CO2):', vehicleTotals); // Debug log
-              
-              if (vehicleTotals.length === 0) {
-                // Show message when no data
-                const context = ctx.getContext('2d');
-                context.clearRect(0, 0, ctx.width, ctx.height);
-                context.font = '16px Arial';
-                context.fillStyle = '#666';
-                context.textAlign = 'center';
-                context.fillText('Aucune donnée d\'émissions disponible', ctx.width / 2, ctx.height / 2);
+            try {
+              const ctx = document.getElementById('emissionsChart');
+              if (!ctx) {
+                console.warn('Chart canvas element not found');
                 return;
               }
 
-              // Generate colors for each vehicle
-              const colors = [
-                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
-                '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
-              ];
+              // Destroy existing chart if it exists
+              if (this.emissionsChart) {
+                this.emissionsChart.destroy();
+                this.emissionsChart = null;
+              }
 
-              this.emissionsChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                  labels: vehicleTotals.map(v => v.name),
-                  datasets: [{
-                    data: vehicleTotals.map(v => v.totalCO2),
-                    backgroundColor: colors.slice(0, vehicleTotals.length),
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                  }]
-                },
-                options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      position: 'bottom',
-                      labels: {
-                        padding: 20,
-                        usePointStyle: true
-                      }
-                    },
-                    tooltip: {
-                      callbacks: {
-                        label: function(context) {
-                          const vehicle = vehicleTotals[context.dataIndex];
-                          const percentage = ((vehicle.totalCO2 / vehicleTotals.reduce((sum, v) => sum + v.totalCO2, 0)) * 100).toFixed(1);
-                          return `${vehicle.name}: ${vehicle.totalCO2.toFixed(2)} kg CO₂ (${percentage}%)`;
+              // Force computed property recalculation
+              this.$forceUpdate();
+              
+              // Get all vehicle totals with a slight delay to ensure reactivity has completed
+              setTimeout(() => {
+                try {
+                  const allTotals = this.allVehiclesTotals;
+                  console.log('All vehicle totals for chart:', allTotals); // Debug log
+                  
+                  // Validate that allTotals is an array
+                  if (!Array.isArray(allTotals)) {
+                    console.error('allVehiclesTotals is not an array:', allTotals);
+                    return;
+                  }
+                  
+                  const vehicleTotals = allTotals.filter(v => v && typeof v.totalCO2 === 'number' && v.totalCO2 > 0);
+                  console.log('Filtered vehicle totals (>0 CO2):', vehicleTotals); // Debug log
+                  
+                  if (vehicleTotals.length === 0) {
+                    // Show message when no data
+                    const context = ctx.getContext('2d');
+                    context.clearRect(0, 0, ctx.width, ctx.height);
+                    context.font = '16px Arial';
+                    context.fillStyle = '#666';
+                    context.textAlign = 'center';
+                    context.fillText('Aucune donnée d\'émissions disponible', ctx.width / 2, ctx.height / 2);
+                    return;
+                  }
+
+                  // Validate vehicle data
+                  const validVehicleTotals = vehicleTotals.filter(v => {
+                    return v.name && typeof v.name === 'string' && 
+                           typeof v.totalCO2 === 'number' && 
+                           !isNaN(v.totalCO2) && 
+                           v.totalCO2 > 0;
+                  });
+
+                  if (validVehicleTotals.length === 0) {
+                    console.warn('No valid vehicle data for chart');
+                    return;
+                  }
+
+                  // Generate colors for each vehicle
+                  const colors = [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                  ];
+
+                  const chartData = {
+                    labels: validVehicleTotals.map(v => v.name || 'Unknown'),
+                    datasets: [{
+                      data: validVehicleTotals.map(v => parseFloat(v.totalCO2.toFixed(2))),
+                      backgroundColor: colors.slice(0, validVehicleTotals.length),
+                      borderWidth: 2,
+                      borderColor: '#fff'
+                    }]
+                  };
+
+                  console.log('Chart data to be used:', chartData); // Debug log
+
+                  this.emissionsChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: chartData,
+                    options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'bottom',
+                          labels: {
+                            padding: 20,
+                            usePointStyle: true
+                          }
                         },
-                        afterLabel: function(context) {
-                          const vehicle = vehicleTotals[context.dataIndex];
-                          return [
-                            `Sites: ${vehicle.sitesCount}`,
-                            `Distance: ${vehicle.totalDistance.toFixed(2)} km`,
-                            `Carburant: ${vehicle.totalFuel.toFixed(2)} L`
-                          ];
+                        tooltip: {
+                          callbacks: {
+                            label: function(context) {
+                              const vehicle = validVehicleTotals[context.dataIndex];
+                              const totalEmissions = validVehicleTotals.reduce((sum, v) => sum + v.totalCO2, 0);
+                              const percentage = ((vehicle.totalCO2 / totalEmissions) * 100).toFixed(1);
+                              return `${vehicle.name}: ${vehicle.totalCO2.toFixed(2)} kg CO₂ (${percentage}%)`;
+                            },
+                            afterLabel: function(context) {
+                              const vehicle = validVehicleTotals[context.dataIndex];
+                              return [
+                                `Sites: ${vehicle.sitesCount || 0}`,
+                                `Distance: ${(vehicle.totalDistance || 0).toFixed(2)} km`,
+                                `Carburant: ${(vehicle.totalFuel || 0).toFixed(2)} L`
+                              ];
+                            }
+                          }
                         }
+                      },
+                      animation: {
+                        animateRotate: true,
+                        animateScale: true
                       }
                     }
-                  },
-                  animation: {
-                    animateRotate: true,
-                    animateScale: true
-                  }
+                  });
+
+                  console.log('Chart created successfully');
+                } catch (chartError) {
+                  console.error('Error creating chart:', chartError);
                 }
-              });
-            }, 10);
+              }, 10);
+            } catch (error) {
+              console.error('Error in createEmissionsChart:', error);
+            }
           },
 
           updateEmissionsChart() {
-            console.log('Updating emissions chart...'); // Debug log
-            
-            // Force Vue to update computed properties first
-            this.$forceUpdate();
-            
-            // Delay chart update to ensure DOM and reactivity are ready
-            this.$nextTick(() => {
-              this.createEmissionsChart();
-            });
+            try {
+              console.log('Updating emissions chart...'); // Debug log
+              
+              // Force Vue to update computed properties first
+              this.$forceUpdate();
+              
+              // Delay chart update to ensure DOM and reactivity are ready
+              this.$nextTick(() => {
+                this.createEmissionsChart();
+              });
+            } catch (error) {
+              console.error('Error in updateEmissionsChart:', error);
+            }
           },
 
           async loadSessionData() {
