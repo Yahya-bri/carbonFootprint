@@ -305,7 +305,11 @@
                   </div>
                   
                   <div class="text-sm text-blue-700 bg-blue-100 p-3 rounded-lg">
-                    <strong>💡 Conseil :</strong> Après avoir modifié les valeurs du facteur d'émission ou de consommation, cliquez sur "Recalculer les Distances" pour mettre à jour les émissions de CO₂ pour les sites existants.
+                    <strong>💡 Conseil :</strong> Après avoir modifié les valeurs du facteur d'émission ou de consommation, cliquez sur "Optimiser Routes" pour mettre à jour les émissions de CO₂ pour les sites existants.
+                  </div>
+                  
+                  <div class="text-sm text-green-700 bg-green-100 p-3 rounded-lg mt-2">
+                    <strong>🚗 Optimisation des Routes :</strong> Lorsque plusieurs sites sont assignés au même jour, le système calcule automatiquement une route optimisée : départ de la base → visite de tous les sites → retour à la base. Cela réduit significativement les émissions par rapport aux trajets individuels aller-retour.
                   </div>
                 </div>
               </div>
@@ -469,7 +473,34 @@
                         d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                       ></path>
                     </svg>
-                    Calculer Tout
+                    Optimiser Routes
+                  </button>
+                  <button
+                    @click="toggleRouteVisibility"
+                    class="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center"
+                    v-if="destinations.length > 0"
+                  >
+                    <svg
+                      class="w-5 h-5 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                      ></path>
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                      ></path>
+                    </svg>
+                    {{ showRoutes ? 'Cacher Routes' : 'Voir Routes' }}
                   </button>
                 </div>
               </div>
@@ -521,13 +552,21 @@
                       <p class="text-gray-600">
                         <strong>Durée :</strong> {{ destination.duration }} heures
                       </p>
+                      <p class="text-blue-600 text-xs" v-if="destination.dayRouteInfo">
+                        <strong>{{ destination.dayRouteInfo }}</strong>
+                      </p>
+                      <p class="text-green-600 text-xs" v-if="destination.optimizedOrder">
+                        <strong>Ordre de visite:</strong> {{ destination.optimizedOrder }}
+                      </p>
                     </div>
                     <div>
                       <p class="text-gray-600">
                         <strong>Distance :</strong> {{ getDistanceText(destination) }}
                       </p>
                       <p class="text-gray-600">
-                        <strong>Aller-Retour :</strong> {{ getRoundTripText(destination) }}
+                        <strong v-if="destination.isOptimizedRoute">Part de Route :</strong>
+                        <strong v-else>Aller-Retour :</strong> 
+                        {{ getRoundTripText(destination) }}
                       </p>
                       <p class="text-gray-600">
                         <strong>Carburant Utilisé :</strong> {{ getFuelUsedText(destination) }}
@@ -583,10 +622,114 @@
               </div>
 
               <!-- Map -->
-              <div
-                class="map-container rounded-lg overflow-hidden"
-                id="map"
-              ></div>
+              <div class="relative">
+                <!-- Day Filters -->
+                <div class="mb-4 p-4 bg-gray-50 rounded-lg border" v-if="destinations.length > 0">
+                  <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    Filtres de Journées - Visualisation de Route
+                  </h4>
+                  
+                  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-3">
+                    <button
+                      @click="toggleAllDays"
+                      class="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                      :class="areAllDaysSelected ? 'bg-blue-600 text-white' : 'bg-white border-2 border-blue-200 text-blue-600 hover:bg-blue-50'"
+                    >
+                      {{ areAllDaysSelected ? '✓ Tous' : 'Tous les Jours' }}
+                    </button>
+                    
+                    <button
+                      v-for="day in availableDays"
+                      :key="day"
+                      @click="toggleDayFilter(day)"
+                      class="px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
+                      :class="selectedDays.includes(day) ? 'bg-green-600 text-white' : 'bg-white border-2 border-green-200 text-green-600 hover:bg-green-50'"
+                    >
+                      <span class="mr-1" v-if="selectedDays.includes(day)">✓</span>
+                      Jour {{ day }}
+                    </button>
+                  </div>
+                  
+                  <!-- Day Statistics -->
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    <div class="bg-blue-50 p-2 rounded">
+                      <span class="font-medium text-blue-800">Jours sélectionnés:</span>
+                      <span class="text-blue-600 ml-1">{{ selectedDays.length }} / {{ availableDays.length }}</span>
+                    </div>
+                    <div class="bg-green-50 p-2 rounded">
+                      <span class="font-medium text-green-800">Sites visibles:</span>
+                      <span class="text-green-600 ml-1">{{ filteredDestinations.length }} / {{ destinations.length }}</span>
+                    </div>
+                    <div class="bg-purple-50 p-2 rounded">
+                      <span class="font-medium text-purple-800">Distance filtrée:</span>
+                      <span class="text-purple-600 ml-1">{{ filteredTotalDistance.toFixed(1) }} km</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Quick filter buttons -->
+                  <div class="mt-3 pt-3 border-t border-gray-200">
+                    <span class="text-xs font-medium text-gray-600 mr-3">Filtres rapides:</span>
+                    <div class="flex flex-wrap gap-2 mt-1">
+                      <button
+                        @click="selectWeekDays"
+                        class="px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs text-gray-700 transition-colors"
+                      >
+                        Jours 1-5
+                      </button>
+                      <button
+                        @click="selectEvenDays"
+                        class="px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs text-gray-700 transition-colors"
+                      >
+                        Jours pairs
+                      </button>
+                      <button
+                        @click="selectOddDays"
+                        class="px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded text-xs text-gray-700 transition-colors"
+                      >
+                        Jours impairs
+                      </button>
+                      <button
+                        @click="clearDayFilters"
+                        class="px-2 py-1 bg-red-200 hover:bg-red-300 rounded text-xs text-red-700 transition-colors"
+                      >
+                        Effacer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="map-container rounded-lg overflow-hidden"
+                  id="map"
+                ></div>
+                
+                <!-- Map Legend -->
+                <div class="absolute top-2 right-2 bg-white rounded-lg shadow-lg p-3 text-xs" v-if="destinations.length > 0">
+                  <h4 class="font-bold text-gray-800 mb-2">Légende de la Carte</h4>
+                  <div class="space-y-1">
+                    <div class="flex items-center">
+                      <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                      <span>🏠 Base / Siège</span>
+                    </div>
+                    <div class="flex items-center">
+                      <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                      <span>📍 Sites optimisés</span>
+                    </div>
+                    <div class="flex items-center">
+                      <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                      <span>📍 Sites individuels</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="text-gray-600">
+                      <div>🎨 Couleurs de route = jours différents</div>
+                      <div>🔢 Numéros = ordre de visite</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <!-- Overall Project Summary with Pie Chart -->
               <div class="mt-8 pt-6 border-t border-gray-200">
@@ -1001,6 +1144,9 @@
           markers: [],
           directionsService: null,
           directionsRenderer: null,
+          routeRenderers: [], // For multiple route visualization
+          showRoutes: true, // Toggle route visibility
+          selectedDays: [], // Array of selected days for filtering
           googleMapsLoaded: false,
 
           // Calculations
@@ -1113,6 +1259,45 @@
               return total + (vehicle.totalFuel || 0);
             }, 0);
           },
+
+          // Day filtering computed properties
+          availableDays() {
+            const vehicle = this.selectedVehicleData;
+            const vehicleDestinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
+            
+            const allDays = new Set();
+            vehicleDestinations.forEach(dest => {
+              if (dest.days && Array.isArray(dest.days)) {
+                dest.days.forEach(day => allDays.add(day));
+              }
+            });
+            
+            return Array.from(allDays).sort((a, b) => a - b);
+          },
+
+          areAllDaysSelected() {
+            return this.selectedDays.length === this.availableDays.length && 
+                   this.availableDays.every(day => this.selectedDays.includes(day));
+          },
+
+          filteredDestinations() {
+            const vehicle = this.selectedVehicleData;
+            const vehicleDestinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
+            
+            if (this.selectedDays.length === 0) {
+              return vehicleDestinations;
+            }
+            
+            return vehicleDestinations.filter(dest => {
+              return dest.days && dest.days.some(day => this.selectedDays.includes(day));
+            });
+          },
+
+          filteredTotalDistance() {
+            return this.filteredDestinations.reduce((total, dest) => {
+              return total + (dest.roundTripDistance || 0);
+            }, 0);
+          },
         },
 
         watch: {
@@ -1128,7 +1313,8 @@
 
           selectedVehicle() {
             this.calculateTotals();
-            this.updateMap();
+            this.initializeDayFilters();
+            this.updateMapWithFilters();
             this.updateEmissionsChart();
             this.saveSessionData();
           },
@@ -1139,8 +1325,21 @@
               this.calculateTotals();
               this.updateEmissionsChart();
               this.saveSessionData();
+              // Update day filters when destinations change
+              this.initializeDayFilters();
             },
             deep: true,
+          },
+
+          // Watch for changes in available days to update filters
+          availableDays: {
+            handler(newDays) {
+              // Reset filters when available days change if no selection exists
+              if (this.selectedDays.length === 0 || !this.selectedDays.every(day => newDays.includes(day))) {
+                this.selectedDays = [...newDays];
+              }
+            },
+            immediate: true
           },
 
           // Add watcher for grand totals to force chart updates
@@ -1164,6 +1363,9 @@
         mounted() {
           // Initialize default vehicles first
           this.initializeDefaultVehicles();
+          
+          // Initialize day filters with all available days
+          this.initializeDayFilters();
           
           // Then try to load configurations
           this.loadApiKey();
@@ -1265,18 +1467,53 @@
           },
 
           initMapWithoutGoogle() {
-            // Initialize a placeholder for demo mode
+            // Initialize a placeholder for demo mode with route visualization
             const mapElement = document.getElementById("map");
             if (mapElement) {
               mapElement.innerHTML = `
-                <div class="flex items-center justify-center h-full bg-gray-100 text-gray-500">
-                  <div class="text-center">
-                    <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m0 0L9 7"></path>
-                    </svg>
-                    <p class="text-lg font-medium">Mode Démo</p>
-                    <p class="text-sm">La fonctionnalité de carte nécessite l'API Google Maps</p>
+                <div class="h-full bg-gradient-to-br from-blue-50 to-green-50 relative overflow-hidden">
+                  <!-- Demo Route Visualization -->
+                  <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="bg-white rounded-lg shadow-lg p-6 max-w-md text-center">
+                      <svg class="w-16 h-16 mx-auto mb-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m0 0L9 7"></path>
+                      </svg>
+                      <p class="text-lg font-bold text-gray-800 mb-2">Mode Démo - Visualisation de Route</p>
+                      <p class="text-sm text-gray-600 mb-4">La carte interactive nécessite l'API Google Maps</p>
+                      
+                      <!-- Demo route info -->
+                      <div class="text-left bg-gray-50 rounded p-3 mb-3">
+                        <div class="flex items-center mb-2">
+                          <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                          <span class="text-sm font-medium">🏠 Base</span>
+                        </div>
+                        <div class="flex items-center mb-2">
+                          <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                          <span class="text-sm">📍 Sites optimisés (même jour)</span>
+                        </div>
+                        <div class="flex items-center">
+                          <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                          <span class="text-sm">📍 Sites individuels</span>
+                        </div>
+                      </div>
+                      
+                      <div class="text-xs text-gray-500 bg-green-100 p-2 rounded">
+                        💡 Avec l'API Google Maps, vous verriez ici les routes optimisées en temps réel avec différentes couleurs pour chaque jour
+                      </div>
+                    </div>
                   </div>
+                  
+                  <!-- Animated route lines for demo -->
+                  <svg class="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 400 300">
+                    <path d="M50 150 Q100 100 150 120 Q200 140 250 110 Q300 80 350 150" 
+                          stroke="#3B82F6" stroke-width="3" fill="none" stroke-dasharray="5,5">
+                      <animate attributeName="stroke-dashoffset" values="0;10" dur="1s" repeatCount="indefinite"/>
+                    </path>
+                    <path d="M50 150 Q80 200 120 180 Q160 160 200 190 Q240 220 280 200 Q320 180 350 150" 
+                          stroke="#10B981" stroke-width="3" fill="none" stroke-dasharray="5,5">
+                      <animate attributeName="stroke-dashoffset" values="0;10" dur="1.5s" repeatCount="indefinite"/>
+                    </path>
+                  </svg>
                 </div>
               `;
             }
@@ -1319,20 +1556,53 @@
                 duration: 6,
                 days: [1, 2],
                 distance: 25.4,
-                roundTripDistance: 50.8,
-                fuelUsed: 4.32,
-                co2Emissions: 9.98,
+                roundTripDistance: 35.2, // Reduced due to route optimization
+                fuelUsed: 2.99,
+                co2Emissions: 6.91,
+                isOptimizedRoute: true,
+                dayRouteInfo: "Jour 1-2 - Route optimisée (3 sites)",
+                optimizedOrder: 1
               },
               {
                 name: "Site B - Foundation",
                 address: "789 Foundation Street, Construction Site",
                 measurements: "In-situ testing and groundwater monitoring",
                 duration: 8,
-                days: [3, 4],
+                days: [1, 2],
                 distance: 18.2,
-                roundTripDistance: 36.4,
-                fuelUsed: 3.09,
-                co2Emissions: 7.14,
+                roundTripDistance: 35.2, // Same day route sharing
+                fuelUsed: 2.99,
+                co2Emissions: 6.91,
+                isOptimizedRoute: true,
+                dayRouteInfo: "Jour 1-2 - Route optimisée (3 sites)",
+                optimizedOrder: 2
+              },
+              {
+                name: "Site C - Environmental",
+                address: "321 Environmental Testing Ave",
+                measurements: "Groundwater sampling and contamination assessment",
+                duration: 4,
+                days: [1, 2],
+                distance: 12.8,
+                roundTripDistance: 35.2, // Same day route sharing
+                fuelUsed: 2.99,
+                co2Emissions: 6.91,
+                isOptimizedRoute: true,
+                dayRouteInfo: "Jour 1-2 - Route optimisée (3 sites)",
+                optimizedOrder: 3
+              },
+              {
+                name: "Site D - Standalone",
+                address: "654 Remote Testing Location",
+                measurements: "Geological survey and soil analysis",
+                duration: 6,
+                days: [3],
+                distance: 28.5,
+                roundTripDistance: 57.0, // Individual site - traditional calculation
+                fuelUsed: 4.85,
+                co2Emissions: 11.20,
+                isOptimizedRoute: false,
+                dayRouteInfo: "Jour 3 - Site unique (trajet aller-retour)"
               },
             ];
             this.calculateTotals();
@@ -1371,53 +1641,123 @@
           },
 
           updateMap() {
-            const vehicle = this.selectedVehicleData;
-            const vehicleDestinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
-            if (!this.map || !this.googleMapsLoaded || vehicleDestinations.length === 0) return;
+            // Use the filtered map update method
+            this.updateMapWithFilters();
+          },
 
-            // Clear existing markers
-            this.markers.forEach((marker) => marker.setMap(null));
-            this.markers = [];
+          drawOptimizedRoutes(destinationsByDay, homeAddress) {
+            if (!this.googleMapsLoaded || !window.google || !this.showRoutes) return;
 
-            const bounds = new google.maps.LatLngBounds();
-            const homeAddress = vehicle ? vehicle.homeAddress : '';
+            const directionsService = new google.maps.DirectionsService();
+            const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+            let colorIndex = 0;
 
-            if (!homeAddress) return;
+            // Draw route for each day
+            Object.keys(destinationsByDay).forEach(day => {
+              const sitesForDay = destinationsByDay[day];
+              
+              if (sitesForDay.length === 1) {
+                // Single site - draw simple round trip
+                this.drawSingleSiteRoute(homeAddress, sitesForDay[0].address, colors[colorIndex % colors.length], day);
+              } else if (sitesForDay.length > 1) {
+                // Multiple sites - draw optimized route
+                this.drawMultiSiteRoute(homeAddress, sitesForDay, colors[colorIndex % colors.length], day);
+              }
+              
+              colorIndex++;
+            });
+          },
 
-            // Add home marker
-            const geocoder = new google.maps.Geocoder();
-            geocoder.geocode({ address: homeAddress }, (results, status) => {
-              if (status === "OK" && results[0]) {
-                const homeMarker = new google.maps.Marker({
-                  position: results[0].geometry.location,
-                  map: this.map,
-                  title: "Home Base",
-                  icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+          drawSingleSiteRoute(homeAddress, siteAddress, color, day) {
+            const directionsService = new google.maps.DirectionsService();
+            
+            const routeRenderer = new google.maps.DirectionsRenderer({
+              map: this.map,
+              suppressMarkers: true, // We already have custom markers
+              polylineOptions: {
+                strokeColor: color,
+                strokeWeight: 4,
+                strokeOpacity: 0.8
+              }
+            });
+            
+            if (!this.routeRenderers) this.routeRenderers = [];
+            this.routeRenderers.push(routeRenderer);
+
+            directionsService.route({
+              origin: homeAddress,
+              destination: homeAddress,
+              waypoints: [{ location: siteAddress, stopover: true }],
+              travelMode: google.maps.TravelMode.DRIVING
+            }, (response, status) => {
+              if (status === 'OK') {
+                routeRenderer.setDirections(response);
+                
+                // Add route info window
+                const routeInfo = new google.maps.InfoWindow({
+                  content: `<div style="color: ${color}; font-weight: bold;">Jour ${day} - Site unique<br>Trajet aller-retour traditionnel</div>`,
+                  position: response.routes[0].overview_path[Math.floor(response.routes[0].overview_path.length / 2)]
                 });
-                this.markers.push(homeMarker);
-                bounds.extend(results[0].geometry.location);
+                
+                // Show route info briefly
+                setTimeout(() => {
+                  routeInfo.open(this.map);
+                  setTimeout(() => routeInfo.close(), 3000);
+                }, 1000);
+              }
+            });
+          },
 
-                // Add destination markers
-                vehicleDestinations.forEach((destination) => {
-                  geocoder.geocode(
-                    { address: destination.address },
-                    (destResults, destStatus) => {
-                      if (destStatus === "OK" && destResults[0]) {
-                        const destMarker = new google.maps.Marker({
-                          position: destResults[0].geometry.location,
-                          map: this.map,
-                          title: destination.address,
-                          icon: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
-                        });
-                        this.markers.push(destMarker);
-                        bounds.extend(destResults[0].geometry.location);
+          drawMultiSiteRoute(homeAddress, sitesForDay, color, day) {
+            const directionsService = new google.maps.DirectionsService();
+            
+            const routeRenderer = new google.maps.DirectionsRenderer({
+              map: this.map,
+              suppressMarkers: true, // We already have custom markers
+              polylineOptions: {
+                strokeColor: color,
+                strokeWeight: 5,
+                strokeOpacity: 0.9
+              }
+            });
+            
+            if (!this.routeRenderers) this.routeRenderers = [];
+            this.routeRenderers.push(routeRenderer);
 
-                        // Fit map to show all markers
-                        this.map.fitBounds(bounds);
-                      }
-                    }
-                  );
+            const waypoints = sitesForDay.map(site => ({
+              location: site.address,
+              stopover: true
+            }));
+
+            directionsService.route({
+              origin: homeAddress,
+              destination: homeAddress, // Return to base
+              waypoints: waypoints,
+              optimizeWaypoints: true,
+              travelMode: google.maps.TravelMode.DRIVING
+            }, (response, status) => {
+              if (status === 'OK') {
+                routeRenderer.setDirections(response);
+                
+                const totalDistance = response.routes[0].legs.reduce((total, leg) => total + leg.distance.value, 0) / 1000;
+                
+                // Add route info window
+                const routeInfo = new google.maps.InfoWindow({
+                  content: `<div style="color: ${color}; font-weight: bold;">
+                    Jour ${day} - Route optimisée<br>
+                    ${sitesForDay.length} sites - ${totalDistance.toFixed(2)} km total<br>
+                    <span style="font-size: 12px;">🌱 Émissions réduites vs trajets individuels</span>
+                  </div>`,
+                  position: response.routes[0].overview_path[Math.floor(response.routes[0].overview_path.length / 2)]
                 });
+                
+                // Show route info briefly
+                setTimeout(() => {
+                  routeInfo.open(this.map);
+                  setTimeout(() => routeInfo.close(), 4000);
+                }, 1500);
+              } else {
+                console.error('Multi-site route failed:', status);
               }
             });
           },
@@ -1491,6 +1831,147 @@
             });
           },
 
+          // New method to calculate optimized routes for multiple sites per day
+          calculateOptimizedRoutes() {
+            return new Promise(async (resolve, reject) => {
+              const vehicle = this.selectedVehicleData;
+              const vehicleDestinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
+              
+              if (vehicleDestinations.length === 0) {
+                resolve();
+                return;
+              }
+
+              try {
+                // Group destinations by day
+                const destinationsByDay = {};
+                vehicleDestinations.forEach((dest, index) => {
+                  dest.days.forEach(day => {
+                    if (!destinationsByDay[day]) {
+                      destinationsByDay[day] = [];
+                    }
+                    destinationsByDay[day].push({ ...dest, originalIndex: index });
+                  });
+                });
+
+                // Calculate optimized route for each day
+                for (const day of Object.keys(destinationsByDay)) {
+                  const sitesForDay = destinationsByDay[day];
+                  
+                  if (sitesForDay.length === 1) {
+                    // Single site - keep current calculation
+                    await this.calculateDistance(vehicleDestinations[sitesForDay[0].originalIndex]);
+                  } else {
+                    // Multiple sites - calculate optimized route
+                    await this.calculateOptimizedDayRoute(day, sitesForDay, vehicleDestinations);
+                  }
+                }
+
+                resolve();
+              } catch (error) {
+                console.error("Error calculating optimized routes:", error);
+                reject(error);
+              }
+            });
+          },
+
+          calculateOptimizedDayRoute(day, sitesForDay, vehicleDestinations) {
+            return new Promise((resolve, reject) => {
+              if (this.isDemoMode) {
+                // Demo mode: simulate optimized routing
+                const totalSites = sitesForDay.length;
+                const avgDistanceBetweenSites = 15; // km
+                const totalRouteDistance = (totalSites * avgDistanceBetweenSites) + (Math.random() * 20);
+                
+                // Distribute the route distance among sites proportionally
+                sitesForDay.forEach((site, index) => {
+                  const originalDest = vehicleDestinations[site.originalIndex];
+                  const proportionalDistance = totalRouteDistance / totalSites;
+                  
+                  originalDest.distance = proportionalDistance / 2; // One way distance
+                  originalDest.roundTripDistance = proportionalDistance; // Share of total route
+                  originalDest.fuelUsed = (originalDest.roundTripDistance * this.selectedVehicleData.consumption) / 100;
+                  originalDest.co2Emissions = originalDest.fuelUsed * this.selectedVehicleData.emissionFactor;
+                  originalDest.isOptimizedRoute = true;
+                  originalDest.dayRouteInfo = `Jour ${day} - Route optimisée (${totalSites} sites)`;
+                });
+                
+                resolve();
+                return;
+              }
+
+              if (!this.googleMapsLoaded || !window.google) {
+                console.warn("Google Maps not loaded, using fallback for optimized route");
+                // Fallback calculation
+                sitesForDay.forEach((site, index) => {
+                  const originalDest = vehicleDestinations[site.originalIndex];
+                  originalDest.distance = 0;
+                  originalDest.roundTripDistance = 0;
+                  originalDest.fuelUsed = 0;
+                  originalDest.co2Emissions = 0;
+                  originalDest.isOptimizedRoute = true;
+                });
+                resolve();
+                return;
+              }
+
+              const homeAddress = this.selectedVehicleData.homeAddress;
+              const waypoints = sitesForDay.map(site => ({
+                location: site.address,
+                stopover: true
+              }));
+
+              // Use Directions Service for route optimization
+              const directionsService = new google.maps.DirectionsService();
+              
+              directionsService.route({
+                origin: homeAddress,
+                destination: homeAddress, // Return to base
+                waypoints: waypoints,
+                optimizeWaypoints: true,
+                travelMode: google.maps.TravelMode.DRIVING
+              }, (response, status) => {
+                if (status === 'OK') {
+                  const route = response.routes[0];
+                  const totalDistance = route.legs.reduce((total, leg) => total + leg.distance.value, 0) / 1000; // Convert to km
+                  
+                  // Distribute the total route distance among all sites for this day
+                  sitesForDay.forEach((site, index) => {
+                    const originalDest = vehicleDestinations[site.originalIndex];
+                    
+                    // Calculate proportional share of the route
+                    const legDistance = route.legs[index] ? route.legs[index].distance.value / 1000 : 0;
+                    const proportionalShare = totalDistance / sitesForDay.length;
+                    
+                    originalDest.distance = legDistance; // Distance from previous point
+                    originalDest.roundTripDistance = proportionalShare; // Proportional share of total route
+                    originalDest.fuelUsed = (proportionalShare * this.selectedVehicleData.consumption) / 100;
+                    originalDest.co2Emissions = originalDest.fuelUsed * this.selectedVehicleData.emissionFactor;
+                    originalDest.isOptimizedRoute = true;
+                    originalDest.dayRouteInfo = `Jour ${day} - Route optimisée (${sitesForDay.length} sites, ${totalDistance.toFixed(2)} km total)`;
+                    originalDest.optimizedOrder = response.routes[0].waypoint_order[index] + 1;
+                  });
+                  
+                  console.log(`Optimized route for day ${day}: ${totalDistance.toFixed(2)} km total for ${sitesForDay.length} sites`);
+                  resolve();
+                } else {
+                  console.error('Directions service failed:', status);
+                  // Fallback to individual calculations
+                  Promise.all(sitesForDay.map(site => 
+                    this.calculateDistance(vehicleDestinations[site.originalIndex])
+                  )).then(() => {
+                    // Mark as attempted optimization but failed
+                    sitesForDay.forEach((site, index) => {
+                      const originalDest = vehicleDestinations[site.originalIndex];
+                      originalDest.dayRouteInfo = `Jour ${day} - Calcul individuel (optimisation échouée)`;
+                    });
+                    resolve();
+                  }).catch(reject);
+                }
+              });
+            });
+          },
+
           async calculateAllDistances() {
             const vehicle = this.selectedVehicleData;
             const vehicleDestinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
@@ -1503,16 +1984,11 @@
             }
 
             this.loading = true;
-            this.loadingMessage = "Calcul des distances...";
+            this.loadingMessage = "Calcul des routes optimisées...";
 
             try {
-              // Calculate distance for each destination
-              for (let i = 0; i < vehicleDestinations.length; i++) {
-                this.loadingMessage = `Calcul de la distance ${i + 1} sur ${
-                  vehicleDestinations.length
-                }...`;
-                await this.calculateDistance(vehicleDestinations[i]);
-              }
+              // Use optimized route calculation instead of individual distances
+              await this.calculateOptimizedRoutes();
 
               // Force updates after all calculations
               this.$forceUpdate();
@@ -1631,7 +2107,7 @@
 
             this.showDestinationModal = false;
             
-            // Force immediate recalculation and updates
+            // Force immediate optimization and updates
             this.calculateAllDistances().then(() => {
               // Force Vue reactivity updates
               this.$forceUpdate();
@@ -1720,6 +2196,218 @@
             }
           },
 
+          toggleRouteVisibility() {
+            this.showRoutes = !this.showRoutes;
+            
+            if (this.routeRenderers && this.routeRenderers.length > 0) {
+              this.routeRenderers.forEach(renderer => {
+                renderer.setMap(this.showRoutes ? this.map : null);
+              });
+            }
+            
+            if (this.directionsRenderer) {
+              this.directionsRenderer.setMap(this.showRoutes ? this.map : null);
+            }
+          },
+
+          // Day filtering methods
+          toggleDayFilter(day) {
+            const index = this.selectedDays.indexOf(day);
+            if (index > -1) {
+              this.selectedDays.splice(index, 1);
+            } else {
+              this.selectedDays.push(day);
+            }
+            this.updateMapForFilteredDays();
+          },
+
+          toggleAllDays() {
+            if (this.areAllDaysSelected) {
+              this.selectedDays = [];
+            } else {
+              this.selectedDays = [...this.availableDays];
+            }
+            this.updateMapForFilteredDays();
+          },
+
+          selectWeekDays() {
+            this.selectedDays = this.availableDays.filter(day => day >= 1 && day <= 5);
+            this.updateMapForFilteredDays();
+          },
+
+          selectEvenDays() {
+            this.selectedDays = this.availableDays.filter(day => day % 2 === 0);
+            this.updateMapForFilteredDays();
+          },
+
+          selectOddDays() {
+            this.selectedDays = this.availableDays.filter(day => day % 2 === 1);
+            this.updateMapForFilteredDays();
+          },
+
+          clearDayFilters() {
+            this.selectedDays = [];
+            this.updateMapForFilteredDays();
+          },
+
+          updateMapForFilteredDays() {
+            // Clear existing routes
+            if (this.routeRenderers && this.routeRenderers.length > 0) {
+              this.routeRenderers.forEach(renderer => renderer.setMap(null));
+              this.routeRenderers = [];
+            }
+
+            // Update map with filtered data
+            this.updateMapWithFilters();
+          },
+
+          updateMapWithFilters() {
+            const vehicle = this.selectedVehicleData;
+            const vehicleDestinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
+            if (!this.map || !this.googleMapsLoaded || vehicleDestinations.length === 0) return;
+
+            // Clear existing markers and routes
+            this.markers.forEach((marker) => marker.setMap(null));
+            this.markers = [];
+            
+            // Clear existing direction renderers
+            if (this.directionsRenderer) {
+              this.directionsRenderer.setMap(null);
+            }
+            
+            // Clear any additional route renderers
+            if (this.routeRenderers) {
+              this.routeRenderers.forEach(renderer => renderer.setMap(null));
+            }
+            this.routeRenderers = [];
+
+            const bounds = new google.maps.LatLngBounds();
+            const homeAddress = vehicle ? vehicle.homeAddress : '';
+
+            if (!homeAddress) return;
+
+            // Filter destinations based on selected days
+            let filteredDestinations;
+            if (this.selectedDays.length === 0) {
+              filteredDestinations = vehicleDestinations;
+            } else {
+              filteredDestinations = vehicleDestinations.filter(dest => {
+                return dest.days && dest.days.some(day => this.selectedDays.includes(day));
+              });
+            }
+
+            // Group filtered destinations by day for route visualization
+            const destinationsByDay = {};
+            filteredDestinations.forEach((dest, index) => {
+              dest.days.forEach(day => {
+                // Only include days that are selected (or all if none selected)
+                if (this.selectedDays.length === 0 || this.selectedDays.includes(day)) {
+                  if (!destinationsByDay[day]) {
+                    destinationsByDay[day] = [];
+                  }
+                  destinationsByDay[day].push({ ...dest, originalIndex: vehicleDestinations.indexOf(dest) });
+                }
+              });
+            });
+
+            const geocoder = new google.maps.Geocoder();
+            
+            // Add the home marker
+            geocoder.geocode({ address: homeAddress }, (results, status) => {
+              if (status === "OK" && results[0]) {
+                const homeMarker = new google.maps.Marker({
+                  position: results[0].geometry.location,
+                  map: this.map,
+                  title: "🏠 Base / Siège Social",
+                  icon: {
+                    url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+                    scaledSize: new google.maps.Size(40, 40)
+                  },
+                  zIndex: 1000
+                });
+                this.markers.push(homeMarker);
+                bounds.extend(results[0].geometry.location);
+
+                // Add filtered destination markers
+                let markersProcessed = 0;
+                const totalMarkers = filteredDestinations.length;
+
+                if (totalMarkers === 0) {
+                  this.map.fitBounds(bounds);
+                  return;
+                }
+
+                filteredDestinations.forEach((destination, index) => {
+                  geocoder.geocode(
+                    { address: destination.address },
+                    (destResults, destStatus) => {
+                      if (destStatus === "OK" && destResults[0]) {
+                        // Create custom marker with day information
+                        const dayLabel = destination.days.filter(day => 
+                          this.selectedDays.length === 0 || this.selectedDays.includes(day)
+                        ).join(',');
+                        
+                        const markerIcon = destination.isOptimizedRoute 
+                          ? "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+                          : "http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+                        
+                        const destMarker = new google.maps.Marker({
+                          position: destResults[0].geometry.location,
+                          map: this.map,
+                          title: `${destination.name || `Site ${vehicleDestinations.indexOf(destination) + 1}`}\nJour(s): ${dayLabel}\n${destination.dayRouteInfo || ''}`,
+                          icon: {
+                            url: markerIcon,
+                            scaledSize: new google.maps.Size(35, 35)
+                          },
+                          label: {
+                            text: `${vehicleDestinations.indexOf(destination) + 1}`,
+                            color: "white",
+                            fontWeight: "bold",
+                            fontSize: "12px"
+                          }
+                        });
+                        
+                        this.markers.push(destMarker);
+                        bounds.extend(destResults[0].geometry.location);
+                        
+                        markersProcessed++;
+                        
+                        // When all markers are processed, draw filtered routes
+                        if (markersProcessed === totalMarkers) {
+                          this.map.fitBounds(bounds);
+                          this.drawFilteredRoutes(destinationsByDay, homeAddress);
+                        }
+                      }
+                    }
+                  );
+                });
+              }
+            });
+          },
+
+          drawFilteredRoutes(destinationsByDay, homeAddress) {
+            if (!this.googleMapsLoaded || !window.google || !this.showRoutes) return;
+
+            const directionsService = new google.maps.DirectionsService();
+            const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+            let colorIndex = 0;
+
+            // Draw route for each filtered day
+            Object.keys(destinationsByDay).forEach(day => {
+              const sitesForDay = destinationsByDay[day];
+              
+              if (sitesForDay.length === 1) {
+                // Single site - draw simple round trip
+                this.drawSingleSiteRoute(homeAddress, sitesForDay[0].address, colors[colorIndex % colors.length], day);
+              } else if (sitesForDay.length > 1) {
+                // Multiple sites - draw optimized route
+                this.drawMultiSiteRoute(homeAddress, sitesForDay, colors[colorIndex % colors.length], day);
+              }
+              
+              colorIndex++;
+            });
+          },
+
           // Configuration and session management methods
           initializeDefaultVehicles() {
             // Ensure we have at least one properly structured vehicle
@@ -1752,6 +2440,16 @@
                   vehicle.destinations = [];
                 }
               });
+            }
+          },
+
+          initializeDayFilters() {
+            // Initialize day filters with all available days for current vehicle
+            const allDays = this.availableDays;
+            if (allDays.length > 0) {
+              this.selectedDays = [...allDays];
+            } else {
+              this.selectedDays = [];
             }
           },
 
