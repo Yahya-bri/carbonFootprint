@@ -1,84 +1,203 @@
 {
-  "selectedVehicle": 2,
+  "selectedVehicle": 0,
   "vehicles": [
     {
-      "name": "Tester 1",
-      "homeAddress": "280 Av. du Comte Vert 73000 Chambéry",
-      "emissionFactor": 2.31,
-      "consumption": 6.5,
+      "name": "Equipe BERT 2",
+      "homeAddress": "Porge",
+      "emissionFactor": 3.038,
+      "consumption": 6.8,
       "studySettings": {
-        "studyName": "New Investigation",
+        "studyName": "S1",
         "studyDuration": 5,
         "workingHours": 8
       },
       "destinations": [
         {
-          "address": "1 Rue Paul Doumer, 73100 Aix-les-Bains",
+          "address": "64160 Coslédaà-Lube-Boast",
           "measurements": "",
           "duration": 4,
           "days": [
             1
           ],
-          "distance": 15.684,
-          "roundTripDistance": 31.368,
-          "fuelUsed": 2.03892,
-          "co2Emissions": 4.709905200000001
-        }
-      ]
-    },
-    {
-      "name": "Tester 2",
-      "homeAddress": "170 rue oradour sur glane 73000 chambéry",
-      "emissionFactor": 2.31,
-      "consumption": 6.5,
-      "studySettings": {
-        "studyName": "New Investigation",
-        "studyDuration": 5,
-        "workingHours": 8
-      },
-      "destinations": [
+          "distance": 236.218,
+          "roundTripDistance": 472.436,
+          "fuelUsed": 32.125648,
+          "co2Emissions": 97.597718624,
+          "name": "CAP250402-1"
+        },
         {
-          "address": "21 Rue Cyprian, 69100 Villeurbanne",
+          "address": "2025 Rte du Landran, 40380 Gamarde-les-Bains",
           "measurements": "",
           "duration": 4,
           "days": [
-            1,
+            1
+          ],
+          "distance": 159.08,
+          "roundTripDistance": 318.16,
+          "fuelUsed": 21.634880000000003,
+          "co2Emissions": 65.72676544000001,
+          "name": "CAP250402-2"
+        },
+        {
+          "address": "2025 Rte du Landran, 40380 Gamarde-les-Bains",
+          "measurements": "",
+          "duration": 4,
+          "days": [
             2
           ],
-          "distance": 99.95,
-          "roundTripDistance": 199.9,
-          "fuelUsed": 12.993500000000001,
-          "co2Emissions": 30.014985000000003
+          "distance": 159.08,
+          "roundTripDistance": 318.16,
+          "fuelUsed": 21.634880000000003,
+          "co2Emissions": 65.72676544000001,
+          "name": "CAP250402-3"
+        },
+        {
+          "name": "GEO120827-6",
+          "address": "BAYONNE ",
+          "measurements": "1SP",
+          "duration": 4,
+          "days": [
+            2
+          ],
+          "distance": 190.524,
+          "roundTripDistance": 381.048,
+          "fuelUsed": 25.911264000000003,
+          "co2Emissions": 78.718420032
         }
       ]
     },
     {
-      "name": "Tester 3",
-      "homeAddress": "4 Rue Louis Blériot, 73000 Chambéry",
-      "emissionFactor": 2.31,
-      "consumption": 6.5,
+      "name": "Equipe Emmanuel 3",
+      "homeAddress": "Marmande 47200",
+      "emissionFactor": 3.04,
+      "consumption": 8,
       "studySettings": {
-        "studyName": "New Investigation",
+        "studyName": "S1",
         "studyDuration": 5,
         "workingHours": 8
       },
       "destinations": [
         {
-          "address": "270 Rue Oradour-sur-Glâne, 73000 Chambéry",
-          "measurements": "",
+          "name": "CAP250402-1",
+          "address": "64160 Coslédaà-Lube-Boast",
+          "measurements": "3CPT",
           "duration": 4,
           "days": [
-            1,
+            3
+          ],
+          "distance": 176.748,
+          "roundTripDistance": 353.496,
+          "fuelUsed": 28.27968,
+          "co2Emissions": 85.9702272
+        },
+        {
+          "name": "CAP250402-3",
+          "address": "747 Rte de Farthouat, 40250 Lahosse",
+          "measurements": "3CPT",
+          "duration": 4,
+          "days": [
+            3
+          ],
+          "distance": 171.092,
+          "roundTripDistance": 342.184,
+          "fuelUsed": 27.374720000000003,
+          "co2Emissions": 83.21914880000001
+        },
+        {
+          "name": "CAP250402-2",
+          "address": "2025 Rte du Landran, 40380 Gamarde-les-Bains",
+          "measurements": "3CPT",
+          "duration": 4,
+          "days": [
+            4
+          ],
+          "distance": 168.54,
+          "roundTripDistance": 337.08,
+          "fuelUsed": 26.9664,
+          "co2Emissions": 81.977856
+        },
+        {
+          "name": "CAP240207",
+          "address": "BASSUSSARRY",
+          "measurements": "5 CPT",
+          "duration": 8,
+          "days": [
+            1
+          ],
+          "distance": 235.78,
+          "roundTripDistance": 471.56,
+          "fuelUsed": 37.7248,
+          "co2Emissions": 114.68339200000001
+        },
+        {
+          "name": "GEO120827-6",
+          "address": "BAYONNE",
+          "measurements": "1CPT",
+          "duration": 8,
+          "days": [
+            2
+          ],
+          "distance": 228.746,
+          "roundTripDistance": 457.492,
+          "fuelUsed": 36.599360000000004,
+          "co2Emissions": 111.26205440000001
+        }
+      ]
+    },
+    {
+      "name": "EQUIPE CANEDO 1",
+      "homeAddress": "COUTRAS",
+      "emissionFactor": 3.038,
+      "consumption": 6.8,
+      "studySettings": {
+        "studyName": "S1",
+        "studyDuration": 5,
+        "workingHours": 8
+      },
+      "destinations": [
+        {
+          "name": "BX210563 L2&4",
+          "address": "LANGON",
+          "measurements": "1SP",
+          "duration": 8,
+          "days": [
+            1
+          ],
+          "distance": 101.323,
+          "roundTripDistance": 202.646,
+          "fuelUsed": 13.779927999999998,
+          "co2Emissions": 41.86342126399999
+        },
+        {
+          "name": "BX250301",
+          "address": "Prignac-et-Marcamps",
+          "measurements": "1SP",
+          "duration": 4,
+          "days": [
+            2
+          ],
+          "distance": 35.811,
+          "roundTripDistance": 71.622,
+          "fuelUsed": 4.870296,
+          "co2Emissions": 14.795959247999999
+        },
+        {
+          "name": "BX250524",
+          "address": "79 Cr des Aubiers, 33300 Bordeaux",
+          "measurements": "24RF",
+          "duration": 8,
+          "days": [
             3,
-            2
+            4,
+            5
           ],
-          "distance": 0.346,
-          "roundTripDistance": 0.692,
-          "fuelUsed": 0.04497999999999999,
-          "co2Emissions": 0.10390379999999999
+          "distance": 58.347,
+          "roundTripDistance": 116.694,
+          "fuelUsed": 7.935192,
+          "co2Emissions": 24.107113295999998
         }
       ]
     }
   ],
-  "exportDate": "2025-08-28T14:13:07.690Z"
+  "exportDate": "2025-08-29T15:20:39.850Z"
 }

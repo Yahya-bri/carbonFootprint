@@ -7,6 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <link
       href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
       rel="stylesheet"
@@ -48,6 +49,153 @@
         justify-content: center;
         align-items: center;
         z-index: 1000;
+      }
+      .gantt-container {
+        height: 500px;
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+        background: white;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+      .gantt-legend {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .gantt-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .gantt-legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+      }
+      .gantt-timeline {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        font-size: 12px;
+      }
+      .gantt-header {
+        display: flex;
+        background: #f9fafb;
+        border-bottom: 2px solid #e5e7eb;
+        height: 40px;
+        align-items: center;
+        padding: 0 8px;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        flex-shrink: 0;
+      }
+      .gantt-body {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        max-height: calc(500px - 40px);
+      }
+      .gantt-vehicle-section {
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .gantt-row {
+        display: flex;
+        border-bottom: 1px solid #f3f4f6;
+        min-height: 40px;
+        align-items: center;
+        position: relative;
+      }
+      .gantt-row:hover {
+        background: #f8fafc;
+      }
+      .gantt-label {
+        width: 200px;
+        min-width: 200px;
+        padding: 8px;
+        border-right: 1px solid #e5e7eb;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        background: white;
+        position: sticky;
+        left: 0;
+        z-index: 5;
+      }
+      .gantt-timeline-area {
+        flex: 1;
+        position: relative;
+        padding: 4px 0;
+        min-height: 32px;
+      }
+      .gantt-day-header {
+        padding: 8px 4px;
+        text-align: center;
+        font-weight: 500;
+        border-right: 1px solid #e5e7eb;
+        background: #f9fafb;
+        color: #374151;
+        font-size: 11px;
+      }
+      .gantt-bar {
+        position: absolute;
+        height: 24px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        padding: 0 8px;
+        color: white;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .gantt-bar:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      }
+      
+      /* Custom scrollbar for Gantt chart */
+      .gantt-body::-webkit-scrollbar {
+        width: 8px;
+      }
+      .gantt-body::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+      }
+      .gantt-body::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      .gantt-body::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+      
+      /* Ensure proper alignment when scrolling */
+      .gantt-header .gantt-label {
+        background: #f9fafb;
+        position: sticky;
+        left: 0;
+        z-index: 15;
+      }
+      
+      /* Add subtle shadow to indicate scrollable content */
+      .gantt-body {
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+      
+      .gantt-day-header {
+        text-align: center;
+        font-size: 10px;
+        color: #6b7280;
+        padding: 2px;
+        border-right: 1px solid #f3f4f6;
       }
       .pulse {
         animation: pulse 2s infinite;
@@ -178,7 +326,7 @@
                   </h3>
                   <div class="flex space-x-2">
                     <button
-                      @click="selectedVehicle = index"
+                      @click="selectVehicle(index)"
                       class="text-blue-500 hover:text-blue-700 text-sm"
                       v-if="selectedVehicle !== index"
                     >
@@ -865,6 +1013,175 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Global Planning Gantt Chart -->
+              <div class="mt-8 pt-6 border-t border-gray-200">
+                <div class="flex justify-between items-center mb-6">
+                  <h3 class="text-xl font-semibold text-gray-800">
+                    📊 Planification Globale - Diagramme de Gantt
+                  </h3>
+                  <div class="flex space-x-2">
+                    <button
+                      @click="refreshGanttChart"
+                      class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm"
+                    >
+                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                      </svg>
+                      Actualiser
+                    </button>
+                    <button
+                      @click="toggleGanttView"
+                      class="bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                    >
+                      {{ showGanttChart ? 'Masquer' : 'Afficher' }}
+                    </button>
+                  </div>
+                </div>
+
+                <div v-if="showGanttChart" class="space-y-4">
+                  <!-- Gantt Legend -->
+                  <div class="gantt-legend">
+                    <div class="gantt-legend-item">
+                      <div class="gantt-legend-color bg-blue-500"></div>
+                      <span class="text-sm text-gray-700">Véhicule 1</span>
+                    </div>
+                    <div class="gantt-legend-item">
+                      <div class="gantt-legend-color bg-green-500"></div>
+                      <span class="text-sm text-gray-700">Véhicule 2</span>
+                    </div>
+                    <div class="gantt-legend-item">
+                      <div class="gantt-legend-color bg-purple-500"></div>
+                      <span class="text-sm text-gray-700">Véhicule 3</span>
+                    </div>
+                    <div class="gantt-legend-item">
+                      <div class="gantt-legend-color bg-orange-500"></div>
+                      <span class="text-sm text-gray-700">Sites Multiples</span>
+                    </div>
+                    <div class="gantt-legend-item">
+                      <div class="gantt-legend-color bg-red-500"></div>
+                      <span class="text-sm text-gray-700">Conflit de Planning</span>
+                    </div>
+                  </div>
+
+                  <!-- Gantt Chart Container -->
+                  <div class="gantt-container">
+                    <div class="gantt-timeline">
+                      <!-- Header with day columns -->
+                      <div class="gantt-header">
+                        <div class="gantt-label">Véhicule / Site</div>
+                        <div class="gantt-timeline-area">
+                          <div style="display: flex; height: 100%;">
+                            <div 
+                              v-for="day in maxStudyDuration" 
+                              :key="day" 
+                              class="gantt-day-header"
+                              :style="{ width: (100 / maxStudyDuration) + '%' }"
+                            >
+                              Jour {{ day }}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Scrollable Body -->
+                      <div class="gantt-body">
+                        <!-- Vehicle rows -->
+                        <div 
+                          v-for="(vehicle, vehicleIndex) in vehicles" 
+                          :key="vehicleIndex"
+                          class="gantt-vehicle-section"
+                        >
+                          <!-- Vehicle header row -->
+                          <div class="gantt-row">
+                            <div class="gantt-label">
+                              <strong>{{ vehicle.name }}</strong>
+                            </div>
+                            <div class="gantt-timeline-area">
+                              <!-- Vehicle timeline background -->
+                              <div 
+                                v-if="vehicle.destinations && vehicle.destinations.length > 0"
+                                style="position: relative; height: 100%; display: flex;"
+                              >
+                                <div 
+                                  v-for="day in maxStudyDuration" 
+                                  :key="day" 
+                                  :style="{ 
+                                    width: (100 / maxStudyDuration) + '%',
+                                    borderRight: '1px solid #f3f4f6',
+                                    background: hasVehicleActivityOnDay(vehicle, day) ? getVehicleColor(vehicleIndex, 0.1) : 'transparent'
+                                  }"
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Site rows for this vehicle -->
+                          <div 
+                            v-for="(destination, destIndex) in vehicle.destinations" 
+                            :key="destIndex"
+                            class="gantt-row"
+                            v-if="destination.days && destination.days.length > 0"
+                          >
+                            <div class="gantt-label">
+                              &nbsp;&nbsp;{{ destination.name || `Site ${destIndex + 1}` }}
+                            </div>
+                            <div class="gantt-timeline-area">
+                              <div style="position: relative; height: 100%; display: flex;">
+                                <!-- Day grid background -->
+                                <div 
+                                  v-for="day in maxStudyDuration" 
+                                  :key="day" 
+                                  :style="{ 
+                                    width: (100 / maxStudyDuration) + '%',
+                                    borderRight: '1px solid #f3f4f6'
+                                  }"
+                                ></div>
+                                
+                                <!-- Site bars -->
+                                <div 
+                                  v-for="day in destination.days" 
+                                  :key="day"
+                                  class="gantt-bar"
+                                  :style="{
+                                    left: ((day - 1) / maxStudyDuration * 100) + '%',
+                                    width: (1 / maxStudyDuration * 100) + '%',
+                                    background: getVehicleColor(vehicleIndex),
+                                    zIndex: 10
+                                  }"
+                                  :title="`${destination.name || 'Site'} - Jour ${day}\nDurée: ${destination.duration}h\nCO₂: ${(destination.co2Emissions || 0).toFixed(2)} kg`"
+                                  @click="showSiteDetails(destination, vehicle)"
+                                >
+                                  J{{ day }}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Gantt Summary -->
+                  <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-gray-800 mb-2">Résumé du Planning</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span class="font-medium text-gray-700">Durée Totale:</span>
+                        <span class="ml-2 text-blue-600">{{ maxStudyDuration }} jours</span>
+                      </div>
+                      <div>
+                        <span class="font-medium text-gray-700">Sites Planifiés:</span>
+                        <span class="ml-2 text-green-600">{{ totalScheduledSites }}</span>
+                      </div>
+                      <div>
+                        <span class="font-medium text-gray-700">Véhicules Actifs:</span>
+                        <span class="ml-2 text-purple-600">{{ activeVehiclesCount }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1189,6 +1506,13 @@
 
           // Session management
           sessionHistory: [],
+
+          // Gantt Chart
+          showGanttChart: true,
+
+          // Utility
+          saveTimeout: null,
+          chartUpdateTimeout: null,
         },
 
         computed: {
@@ -1362,6 +1686,23 @@
               return total + (dest.roundTripDistance || 0);
             }, 0);
           },
+
+          // Gantt Chart computed properties
+          maxStudyDuration() {
+            return Math.max(...this.vehicles.map(v => v.studySettings ? v.studySettings.studyDuration : 5));
+          },
+
+          totalScheduledSites() {
+            return this.vehicles.reduce((total, vehicle) => {
+              return total + (vehicle.destinations ? vehicle.destinations.length : 0);
+            }, 0);
+          },
+
+          activeVehiclesCount() {
+            return this.vehicles.filter(vehicle => 
+              vehicle.destinations && vehicle.destinations.length > 0
+            ).length;
+          },
         },
 
         watch: {
@@ -1369,8 +1710,12 @@
             handler() {
               this.calculateTotals();
               this.updateMap();
-              this.saveSessionData();
               this.updateEmissionsChart();
+              // Debounce save to avoid excessive calls
+              clearTimeout(this.saveTimeout);
+              this.saveTimeout = setTimeout(() => {
+                this.saveSessionData();
+              }, 1000);
             },
             deep: true,
           },
@@ -1388,9 +1733,13 @@
             handler() {
               this.calculateTotals();
               this.updateEmissionsChart();
-              this.saveSessionData();
               // Update day filters when destinations change
               this.initializeDayFilters();
+              // Debounce save to avoid excessive calls
+              clearTimeout(this.saveTimeout);
+              this.saveTimeout = setTimeout(() => {
+                this.saveSessionData();
+              }, 1000);
             },
             deep: true,
           },
@@ -1422,27 +1771,131 @@
             },
             deep: true
           },
+
+          // Watch for selectedVehicle changes
+          selectedVehicle: {
+            handler(newIndex, oldIndex) {
+              console.log('Selected vehicle changed from', oldIndex, 'to', newIndex);
+              // Debounce save to avoid excessive calls
+              clearTimeout(this.saveTimeout);
+              this.saveTimeout = setTimeout(() => {
+                this.saveSessionData();
+              }, 500);
+              
+              this.$nextTick(() => {
+                this.calculateTotals();
+                this.updateMap();
+                this.updateEmissionsChart();
+              });
+            }
+          },
         },
 
         mounted() {
           // Initialize default vehicles first
           this.initializeDefaultVehicles();
           
+          // Load API key
+          this.loadApiKey();
+          
+          // Load session data (includes vehicles and selectedVehicle)
+          this.loadSessionData();
+          
           // Initialize day filters with all available days
           this.initializeDayFilters();
           
-          // Then try to load configurations
-          this.loadApiKey();
-          this.loadSessionData();
-          
-          
           // Initialize the emissions chart
           this.$nextTick(() => {
+            this.calculateTotals();
             this.updateEmissionsChart();
           });
         },
 
+        beforeDestroy() {
+          // Cleanup timeouts
+          if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+          }
+          if (this.chartUpdateTimeout) {
+            clearTimeout(this.chartUpdateTimeout);
+          }
+          
+          // Cleanup chart
+          if (this.emissionsChart) {
+            this.emissionsChart.destroy();
+            this.emissionsChart = null;
+          }
+        },
+
         methods: {
+          // Gantt Chart Methods
+          getVehicleColor(vehicleIndex, alpha = 1) {
+            const colors = [
+              '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#06B6D4',
+              '#F97316', '#84CC16', '#EC4899', '#6366F1'
+            ];
+            const color = colors[vehicleIndex % colors.length];
+            
+            if (alpha < 1) {
+              // Convert hex to rgba
+              const r = parseInt(color.slice(1, 3), 16);
+              const g = parseInt(color.slice(3, 5), 16);
+              const b = parseInt(color.slice(5, 7), 16);
+              return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+            
+            return color;
+          },
+
+          hasVehicleActivityOnDay(vehicle, day) {
+            if (!vehicle.destinations) return false;
+            return vehicle.destinations.some(dest => 
+              dest.days && dest.days.includes(day)
+            );
+          },
+
+          showSiteDetails(destination, vehicle) {
+            const details = [
+              `Site: ${destination.name || 'Site'}`,
+              `Véhicule: ${vehicle.name}`,
+              `Adresse: ${destination.address}`,
+              `Mesures: ${destination.measurements || 'Non spécifié'}`,
+              `Jours planifiés: ${destination.days.join(', ')}`,
+              `Durée par jour: ${destination.duration || 4}h`,
+              `Distance A/R: ${(destination.roundTripDistance || 0).toFixed(2)} km`,
+              `Carburant: ${(destination.fuelUsed || 0).toFixed(2)} L`,
+              `CO₂: ${(destination.co2Emissions || 0).toFixed(2)} kg`
+            ].join('\n');
+            
+            alert(details);
+          },
+
+          refreshGanttChart() {
+            // Force Vue to re-render the Gantt chart
+            this.$forceUpdate();
+          },
+
+          toggleGanttView() {
+            this.showGanttChart = !this.showGanttChart;
+          },
+
+          // Vehicle selection method
+          selectVehicle(index) {
+            console.log('Selecting vehicle at index:', index);
+            this.selectedVehicle = index;
+            
+            // Force Vue to update reactivity
+            this.$forceUpdate();
+            
+            // Update all related components
+            this.$nextTick(() => {
+              this.calculateTotals();
+              this.updateMap();
+              this.updateEmissionsChart();
+              // Don't save here, the watcher will handle it with debouncing
+            });
+          },
+
           // Helper methods for template expressions
           getDistanceText(destination) {
             return destination.distance 
@@ -1477,13 +1930,13 @@
               dest.days && dest.days.includes(day)
             ).sort((a, b) => {
               // Sort by optimized order if available, otherwise by original index
-              const orderA = this.getVisitOrderForDay(a, day) || vehicleDestinations.indexOf(a) + 1;
-              const orderB = this.getVisitOrderForDay(b, day) || vehicleDestinations.indexOf(b) + 1;
+              const orderA = this.getVisitOrderForDayDirect(a, day) || vehicleDestinations.indexOf(a) + 1;
+              const orderB = this.getVisitOrderForDayDirect(b, day) || vehicleDestinations.indexOf(b) + 1;
               return orderA - orderB;
             });
           },
 
-          getVisitOrderForDay(destination, day) {
+          getVisitOrderForDayDirect(destination, day) {
             // Check if this destination has optimized order information for this specific day
             if (destination.optimizedOrderByDay && destination.optimizedOrderByDay[day]) {
               return destination.optimizedOrderByDay[day];
@@ -1494,8 +1947,23 @@
               return destination.optimizedOrder;
             }
             
-            // Calculate order based on sites for this day
-            const sitesForDay = this.getSitesForDay(day);
+            // Return null to avoid infinite recursion
+            return null;
+          },
+
+          getVisitOrderForDay(destination, day) {
+            // Use the direct method to avoid recursion
+            const directOrder = this.getVisitOrderForDayDirect(destination, day);
+            if (directOrder) return directOrder;
+            
+            // Calculate order based on destinations for this day without calling getSitesForDay
+            const vehicle = this.selectedVehicleData;
+            const vehicleDestinations = (vehicle && vehicle.destinations) ? vehicle.destinations : [];
+            
+            const sitesForDay = vehicleDestinations.filter(dest => 
+              dest.days && dest.days.includes(day)
+            );
+            
             const indexInDay = sitesForDay.findIndex(site => 
               site.address === destination.address
             );
@@ -2634,6 +3102,12 @@
 
                   console.log('Chart data to be used:', chartData); // Debug log
 
+                  // Destroy existing chart if it exists
+                  if (this.emissionsChart) {
+                    this.emissionsChart.destroy();
+                    this.emissionsChart = null;
+                  }
+
                   this.emissionsChart = new Chart(ctx, {
                     type: 'pie',
                     data: chartData,
@@ -2688,13 +3162,17 @@
             try {
               console.log('Updating emissions chart...'); // Debug log
               
-              // Force Vue to update computed properties first
-              this.$forceUpdate();
-              
-              // Delay chart update to ensure DOM and reactivity are ready
-              this.$nextTick(() => {
-                this.createEmissionsChart();
-              });
+              // Debounce chart updates to avoid excessive calls
+              clearTimeout(this.chartUpdateTimeout);
+              this.chartUpdateTimeout = setTimeout(() => {
+                // Force Vue to update computed properties first
+                this.$forceUpdate();
+                
+                // Delay chart update to ensure DOM and reactivity are ready
+                this.$nextTick(() => {
+                  this.createEmissionsChart();
+                });
+              }, 100);
             } catch (error) {
               console.error('Error in updateEmissionsChart:', error);
             }
@@ -2702,44 +3180,35 @@
 
           async loadSessionData() {
             try {
+              // First try to load from localStorage
+              this.loadFromLocalStorage();
+              
+              // Then try to load from data.json if it exists
               const response = await fetch('./data.json');
               if (response.ok) {
                 const sessionData = await response.json();
                 
                 // Restore session data if it exists and is valid
-                if (sessionData.lastSession) {
-                  const session = sessionData.lastSession;
-                  
-                  if (session.studyName) this.studyName = session.studyName;
-                  if (session.studyDuration) this.studyDuration = session.studyDuration;
-                  if (session.workingHours) this.workingHours = session.workingHours;
-                  if (session.selectedVehicle !== undefined) this.selectedVehicle = session.selectedVehicle;
-                  
-                  if (session.vehicles && Array.isArray(session.vehicles)) {
-                    this.vehicles = session.vehicles;
-                  }
-                  
-                  if (session.destinations && Array.isArray(session.destinations)) {
-                    this.destinations = session.destinations;
-                  }
-                  
-                  if (session.apiKey) {
-                    this.apiKey = session.apiKey;
-                    localStorage.setItem("googleMapsApiKey", session.apiKey);
-                  }
-                  
-                  console.log('Session data loaded from data.json successfully');
+                if (sessionData.vehicles && Array.isArray(sessionData.vehicles)) {
+                  this.vehicles = sessionData.vehicles;
                 }
                 
-                // Load session history
+                if (sessionData.selectedVehicle !== undefined) {
+                  this.selectedVehicle = sessionData.selectedVehicle;
+                }
+                
                 if (sessionData.sessionHistory && Array.isArray(sessionData.sessionHistory)) {
                   this.sessionHistory = sessionData.sessionHistory;
                 }
+                
+                console.log('Session data loaded from data.json successfully');
+                
+                // Save to localStorage for future use
+                this.saveSessionData();
               }
             } catch (error) {
-              console.warn('Could not load session data from data.json:', error);
-              // Fallback to localStorage if data.json is not available
-              this.loadFromLocalStorage();
+              console.warn('Could not load session data from data.json, using localStorage:', error);
+              // We already loaded from localStorage above
             }
           },
 
@@ -2824,7 +3293,9 @@
                 if (sessionData.lastSession) {
                   const session = sessionData.lastSession;
                   
-                  this.selectedVehicle = session.selectedVehicle || this.selectedVehicle;
+                  if (session.selectedVehicle !== undefined) {
+                    this.selectedVehicle = session.selectedVehicle;
+                  }
                   
                   if (session.vehicles && Array.isArray(session.vehicles)) {
                     this.vehicles = session.vehicles;
@@ -2840,6 +3311,12 @@
                 }
                 
                 console.log('Session data loaded from localStorage');
+                
+                // Force update after loading
+                this.$nextTick(() => {
+                  this.calculateTotals();
+                  this.updateEmissionsChart();
+                });
               }
             } catch (error) {
               console.error('Error loading from localStorage:', error);
