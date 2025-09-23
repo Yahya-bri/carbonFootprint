@@ -1720,13 +1720,6 @@
             deep: true,
           },
 
-          selectedVehicle() {
-            this.calculateTotals();
-            this.initializeDayFilters();
-            this.updateMapWithFilters();
-            this.updateEmissionsChart();
-            this.saveSessionData();
-          },
 
           // Add watcher for destinations changes
           destinations: {
@@ -1776,15 +1769,18 @@
           selectedVehicle: {
             handler(newIndex, oldIndex) {
               console.log('Selected vehicle changed from', oldIndex, 'to', newIndex);
+              // Reinitialize day filters for the newly selected vehicle
+              this.initializeDayFilters();
               // Debounce save to avoid excessive calls
               clearTimeout(this.saveTimeout);
               this.saveTimeout = setTimeout(() => {
                 this.saveSessionData();
               }, 500);
-              
+
               this.$nextTick(() => {
                 this.calculateTotals();
-                this.updateMap();
+                // Refresh the map using the filtered view for the new vehicle
+                this.updateMapWithFilters();
                 this.updateEmissionsChart();
               });
             }
