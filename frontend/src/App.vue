@@ -7,50 +7,67 @@
       </div>
     </header>
 
-    <div class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Left: Vehicle Management -->
-      <div class="lg:col-span-1 space-y-6">
-        <!-- Vehicle List -->
-        <div class="bg-white rounded-xl shadow p-5">
-          <h2 class="text-xl font-bold mb-4">🚗 Gestion des Véhicules</h2>
-          <div v-for="(v, i) in vehicles" :key="v.id"
-            class="vehicle-card bg-gray-50 p-4 rounded-lg mb-3 border cursor-pointer"
-            :class="{ 'ring-2 ring-emerald-500 bg-emerald-50': selectedIdx === i }"
-            @click="selectVehicle(i)">
-            <div class="flex justify-between items-start">
-              <h3 class="font-semibold">{{ v.name }}</h3>
-              <button @click.stop="deleteVehicle(i)" class="text-red-500 hover:text-red-700">&times;</button>
-            </div>
-            <p class="text-xs text-gray-500">📍 {{ v.homeAddress }}</p>
-            <p class="text-xs text-gray-500">🌫️ {{ v.emissionFactor }} kg CO₂/L · ⛽ {{ v.consumption }} L/100km</p>
-            <p class="text-xs text-gray-500">📋 {{ v.destinations?.length || 0 }} sites</p>
-          </div>
-          <button @click="showAddVehicle = true" class="w-full bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700">+ Ajouter un Véhicule</button>
-        </div>
+    <!-- Tab Bar -->
+    <div class="max-w-7xl mx-auto px-4 pt-6">
+      <div class="flex flex-row gap-2 border-b">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          @click="activeTab = tab.id"
+          class="px-4 py-2 rounded-t-lg font-semibold transition-colors"
+          :class="activeTab === tab.id
+            ? 'bg-emerald-600 text-white'
+            : 'bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-800'">
+          {{ tab.label }}
+        </button>
+      </div>
+    </div>
 
-        <!-- Vehicle Settings -->
-        <div class="bg-white rounded-xl shadow p-5" v-if="currentVehicle">
-          <h3 class="font-bold mb-3">⚙️ {{ currentVehicle.name }}</h3>
-          <div class="space-y-3 text-sm">
-            <div><label class="block text-gray-600">Nom</label><input v-model="currentVehicle.name" class="w-full p-2 border rounded" /></div>
-            <div><label class="block text-gray-600">Adresse de Base</label><input v-model="currentVehicle.homeAddress" class="w-full p-2 border rounded" /></div>
-            <div class="grid grid-cols-2 gap-2">
-              <div><label class="block text-gray-600">Émission (kg CO₂/L)</label><input v-model.number="currentVehicle.emissionFactor" type="number" step="0.01" class="w-full p-2 border rounded" /></div>
-              <div><label class="block text-gray-600">Consommation (L/100km)</label><input v-model.number="currentVehicle.consumption" type="number" step="0.1" class="w-full p-2 border rounded" /></div>
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <!-- Tab: Véhicules -->
+      <div v-if="activeTab === 'vehicules'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Vehicle List -->
+        <div class="lg:col-span-1 space-y-6">
+          <div class="bg-white rounded-xl shadow p-5">
+            <h2 class="text-xl font-bold mb-4">🚗 Gestion des Véhicules</h2>
+            <div v-for="(v, i) in vehicles" :key="v.id"
+              class="vehicle-card bg-gray-50 p-4 rounded-lg mb-3 border cursor-pointer"
+              :class="{ 'ring-2 ring-emerald-500 bg-emerald-50': selectedIdx === i }"
+              @click="selectVehicle(i)">
+              <div class="flex justify-between items-start">
+                <h3 class="font-semibold">{{ v.name }}</h3>
+                <button @click.stop="deleteVehicle(i)" class="text-red-500 hover:text-red-700">&times;</button>
+              </div>
+              <p class="text-xs text-gray-500">📍 {{ v.homeAddress }}</p>
+              <p class="text-xs text-gray-500">🌫️ {{ v.emissionFactor }} kg CO₂/L · ⛽ {{ v.consumption }} L/100km</p>
+              <p class="text-xs text-gray-500">📋 {{ v.destinations?.length || 0 }} sites</p>
             </div>
-            <div><label class="block text-gray-600">Nom de l'Étude</label><input v-model="currentVehicle.studySettings.studyName" class="w-full p-2 border rounded" /></div>
-            <div class="grid grid-cols-2 gap-2">
-              <div><label class="block text-gray-600">Durée (jours)</label><input v-model.number="currentVehicle.studySettings.studyDuration" type="number" min="1" class="w-full p-2 border rounded" /></div>
-              <div><label class="block text-gray-600">Heures/Jour</label><select v-model.number="currentVehicle.studySettings.workingHours" class="w-full p-2 border rounded"><option>8</option><option>10</option><option>12</option></select></div>
+            <button @click="showAddVehicle = true" class="w-full bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700">+ Ajouter un Véhicule</button>
+          </div>
+
+          <!-- Vehicle Settings -->
+          <div class="bg-white rounded-xl shadow p-5" v-if="currentVehicle">
+            <h3 class="font-bold mb-3">⚙️ {{ currentVehicle.name }}</h3>
+            <div class="space-y-3 text-sm">
+              <div><label class="block text-gray-600">Nom</label><input v-model="currentVehicle.name" class="w-full p-2 border rounded" /></div>
+              <div><label class="block text-gray-600">Adresse de Base</label><input v-model="currentVehicle.homeAddress" class="w-full p-2 border rounded" /></div>
+              <div class="grid grid-cols-2 gap-2">
+                <div><label class="block text-gray-600">Émission (kg CO₂/L)</label><input v-model.number="currentVehicle.emissionFactor" type="number" step="0.01" class="w-full p-2 border rounded" /></div>
+                <div><label class="block text-gray-600">Consommation (L/100km)</label><input v-model.number="currentVehicle.consumption" type="number" step="0.1" class="w-full p-2 border rounded" /></div>
+              </div>
+              <div><label class="block text-gray-600">Nom de l'Étude</label><input v-model="currentVehicle.studySettings.studyName" class="w-full p-2 border rounded" /></div>
+              <div class="grid grid-cols-2 gap-2">
+                <div><label class="block text-gray-600">Durée (jours)</label><input v-model.number="currentVehicle.studySettings.studyDuration" type="number" min="1" class="w-full p-2 border rounded" /></div>
+                <div><label class="block text-gray-600">Heures/Jour</label><select v-model.number="currentVehicle.studySettings.workingHours" class="w-full p-2 border rounded"><option>8</option><option>10</option><option>12</option></select></div>
+              </div>
+              <button @click="saveVehicle" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">💾 Enregistrer</button>
             </div>
-            <button @click="saveVehicle" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">💾 Enregistrer</button>
           </div>
         </div>
       </div>
 
-      <!-- Right: Main Content -->
-      <div class="lg:col-span-2 space-y-6">
-        <!-- Destinations -->
+      <!-- Tab: Sites -->
+      <div v-if="activeTab === 'sites'" class="space-y-6">
         <div class="bg-white rounded-xl shadow p-5">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-bold">📍 Sites de Terrain</h2>
@@ -80,14 +97,18 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Map -->
+      <!-- Tab: Carte -->
+      <div v-if="activeTab === 'carte'" class="space-y-6">
         <div class="bg-white rounded-xl shadow p-5">
           <h3 class="font-bold mb-3">🗺️ Carte</h3>
           <div id="map" class="map-container"></div>
         </div>
+      </div>
 
-        <!-- Summary -->
+      <!-- Tab: Résumé -->
+      <div v-if="activeTab === 'resume'" class="space-y-6">
         <div class="bg-white rounded-xl shadow p-5">
           <h3 class="text-xl font-bold mb-4">📊 Résumé</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -158,6 +179,14 @@ const showAddVehicle = ref(false)
 const showDestModal = ref(false)
 const editingDest = ref(null)
 const showAddDest = ref(false)
+
+const tabs = [
+  { id: 'vehicules', label: '🚗 Véhicules' },
+  { id: 'sites', label: '📍 Sites' },
+  { id: 'carte', label: '🗺️ Carte' },
+  { id: 'resume', label: '📊 Résumé' },
+]
+const activeTab = ref('vehicules')
 
 const newV = ref({ name: '', homeAddress: '', emissionFactor: 2.31, consumption: 8.5 })
 const destForm = ref({ name: '', address: '', measurements: '', duration: 4, days: [1] })
@@ -372,13 +401,35 @@ function updateChart() {
 onMounted(async () => {
   await loadData()
   await nextTick()
-  map = L.map('map').setView([46.5, 2.5], 6)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map)
-  updateMap()
+  initMap()
   updateChart()
 })
+
+watch(activeTab, (tab) => {
+  if (tab === 'carte') {
+    nextTick(() => {
+      initMap()
+      updateMap()
+    })
+  } else if (tab === 'resume') {
+    nextTick(updateChart)
+  }
+})
+
+function initMap() {
+  const el = document.getElementById('map')
+  if (!el) return
+  if (!map) {
+    map = L.map('map').setView([46.5, 2.5], 6)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map)
+  } else {
+    // Ensure correct sizing after re-entering the tab
+    map.invalidateSize()
+  }
+  updateMap()
+}
 
 watch(currentVehicle, () => { nextTick(() => { updateMap(); updateChart() }) }, { deep: true })
 </script>
