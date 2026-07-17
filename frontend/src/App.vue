@@ -164,8 +164,10 @@ const destForm = ref({ name: '', address: '', measurements: '', duration: 4, day
 
 let map = null
 let markers = []
-let routeLayer = null
+let routeLayers = []
 let chart = null
+
+const DAY_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
 
 const currentVehicle = computed(() => vehicles.value[selectedIdx.value])
 
@@ -249,6 +251,8 @@ async function calcRoutes() {
   const v = currentVehicle.value
   if (!v) return
   const r = await axios.get(`/api/route/${v.id}/`)
+  // Store per-day route geometry on the vehicle for map drawing
+  v.dayRouteGeometries = {}
   // Update each destination with route data
   for (const d of v.destinations) {
     const day = d.days?.[0]
@@ -263,6 +267,11 @@ async function calcRoutes() {
       }
       d.fuelUsed = d.roundTripDistance * (v.consumption / 100)
       d.co2Emissions = d.fuelUsed * v.emissionFactor
+      // Attach geometry so the map can draw this destination's route segment
+      if (route.geometry?.coordinates) {
+        d.routeGeometry = route.geometry.coordinates
+        v.dayRouteGeometries[day] = route.geometry.coordinates
+      }
       await axios.put(`/api/destinations/${d.id}/`, {
         distance: d.distance, roundTripDistance: d.roundTripDistance,
         fuelUsed: d.fuelUsed, co2Emissions: d.co2Emissions,
@@ -277,17 +286,39 @@ function updateMap() {
   if (!map) return
   markers.forEach(m => map.removeLayer(m))
   markers = []
-  if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null }
+  // Clear previous route polylines
+  routeLayers.forEach(l => map.removeLayer(l))
+  routeLayers = []
 
   const v = currentVehicle.value
   if (!v) return
 
   const bounds = []
+
+  // Determine home position: prefer first coordinate of any route geometry,
+  // fall back to hardcoded [46.5, 2.5].
+  let home = [46.5, 2.5]
+  const geometries = v.dayRouteGeometries
+  if (geometries) {
+    const anyDay = Object.keys(geometries).find(k => geometries[k]?.length)
+    if (anyDay) {
+      const [lng, lat] = geometries[anyDay][0]
+      home = [lat, lng]
+    }
+  } else {
+    // Fall back to per-destination route geometry if available
+    const firstWithGeo = (v.destinations || []).find(d => d.routeGeometry?.length)
+    if (firstWithGeo) {
+      const [lng, lat] = firstWithGeo.routeGeometry[0]
+      home = [lat, lng]
+    }
+  }
+
   // Home marker
   if (v.homeAddress) {
-    const m = L.marker([46.5, 2.5], { icon: L.divIcon({ html: '🏠', className: '', iconSize: [24, 24] }) }).addTo(map).bindPopup(`<b>${v.name}</b><br>${v.homeAddress}`)
+    const m = L.marker(home, { icon: L.divIcon({ html: '🏠', className: '', iconSize: [24, 24] }) }).addTo(map).bindPopup(`<b>${v.name}</b><br>${v.homeAddress}`)
     markers.push(m)
-    bounds.push([46.5, 2.5])
+    bounds.push(home)
   }
 
   // Destination markers
@@ -300,6 +331,24 @@ function updateMap() {
       markers.push(m)
       bounds.push([d.lat, d.lng])
     }
+  }
+
+  // Draw route polylines per day using stored geometry (GeoJSON [lng, lat] pairs)
+  if (geometries) {
+    const days = Object.keys(geometries).sort((a, b) => Number(a) - Number(b))
+    days.forEach((day, idx) => {
+      const coords = geometries[day]
+      if (!coords || coords.length < 2) return
+      const latlngs = coords.map(([lng, lat]) => [lat, lng])
+      const color = DAY_COLORS[idx % DAY_COLORS.length]
+      const polyline = L.polyline(latlngs, {
+        color,
+        weight: 4,
+        opacity: 0.8,
+      }).addTo(map).bindPopup(`Journée ${day}`)
+      routeLayers.push(polyline)
+      latlngs.forEach(ll => bounds.push(ll))
+    })
   }
 
   if (bounds.length > 1) map.fitBounds(bounds, { padding: [50, 50] })
