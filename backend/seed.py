@@ -1,12 +1,9 @@
 import json
-import sys
+import asyncio
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-import asyncio
-from database import async_session, init_db
-from models import Vehicle, Destination
+from backend.database import async_session, init_db
+from backend.models import Vehicle, Destination
 
 
 async def seed():
