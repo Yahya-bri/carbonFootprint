@@ -22,12 +22,19 @@ async def get_db():
 
 
 async def init_db():
+    # Phase 1: Create tables (in its own transaction)
     async with engine.begin() as conn:
         from backend.models import Vehicle, Destination  # noqa: F401
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
-        # Add missing columns if upgrading from an older schema
+
+    # Phase 2: Add missing columns (separate transaction, safe to fail)
+    async with engine.begin() as conn:
         for col, col_type in [("lat", "DOUBLE PRECISION"), ("lng", "DOUBLE PRECISION")]:
             try:
-                await conn.execute(text(f"ALTER TABLE destinations ADD COLUMN {col} {col_type}"))
+                result = await conn.execute(
+                    text(f"SELECT column_name FROM information_schema.columns WHERE table_name='destinations' AND column_name='{col}'")
+                )
+                if not result.scalar():
+                    await conn.execute(text(f"ALTER TABLE destinations ADD COLUMN {col} {col_type}"))
             except Exception:
-                pass  # Column already exists
+                pass
