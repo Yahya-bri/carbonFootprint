@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: carbon
+      POSTGRES_PASSWORD: carbon
+      POSTGRES_DB: carbonfootprint
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carbon -d carbonfootprint"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  router:
+    image: ghcr.io/project-osrm/osrm-backend:latest
+    command: >
+      sh -c "osrm-extract -p /opt/car.lua /data/france-latest.osm.pbf &&
+             osrm-partition /data/france-latest.osrm &&
+             osrm-customize /data/france-latest.osrm &&
+             osrm-routed --algorithm mld /data/france-latest.osrm"
+    ports:
+      - "5000:5000"
+    volumes:
+      - osrm-data:/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://carbon:carbon@db:5432/carbonfootprint
+      OSRM_URL: http://router:5000
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./data.json:/app/data.json
+    command: >
+      sh -c "python -m backend.seed && uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  pgdata:
+  osrm-data:
