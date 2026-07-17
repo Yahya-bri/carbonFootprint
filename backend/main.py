@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from backend.database import get_db, init_db
 from backend.models import Vehicle, Destination
@@ -30,13 +31,17 @@ async def startup():
 
 @app.get("/api/vehicles/")
 async def get_vehicles(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Vehicle).order_by(Vehicle.id))
+    result = await db.execute(
+        select(Vehicle).options(selectinload(Vehicle.destinations)).order_by(Vehicle.id)
+    )
     return [_vehicle_to_dict(v) for v in result.scalars().all()]
 
 
 @app.get("/api/vehicles/{vehicle_id}")
 async def get_vehicle(vehicle_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Vehicle).where(Vehicle.id == vehicle_id))
+    result = await db.execute(
+        select(Vehicle).options(selectinload(Vehicle.destinations)).where(Vehicle.id == vehicle_id)
+    )
     v = result.scalar_one_or_none()
     if v is None:
         raise HTTPException(404, "Vehicle not found")
@@ -288,7 +293,7 @@ def _vehicle_to_dict(v: Vehicle) -> dict:
         "emissionFactor": v.emission_factor,
         "consumption": v.consumption,
         "studySettings": v.study_settings or {"studyName": "New Study", "studyDuration": 5, "workingHours": 8},
-        "destinations": [_dest_to_dict(d) for d in v.destinations],
+        "destinations": [_dest_to_dict(d) for d in (v.destinations or [])],
     }
 
 

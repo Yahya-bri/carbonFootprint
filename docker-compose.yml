@@ -17,6 +17,7 @@ services:
     image: ghcr.io/project-osrm/osrm-backend:latest
     entrypoint: >
       sh -c "
+        apk add --no-cache curl &&
         if [ ! -f /data/france-latest.osm.pbf ]; then
           echo 'Downloading OSM data for France...';
           curl -L -o /data/france-latest.osm.pbf https://download.geofabrik.de/europe/france-latest.osm.pbf;
