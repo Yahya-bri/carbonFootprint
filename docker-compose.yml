@@ -19,8 +19,6 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    ports:
-      - "8000:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://carbon:carbon@db:5432/carbonfootprint
     depends_on:
@@ -35,9 +33,17 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    ports:
-      - "5173:5173"
     depends_on:
+      - backend
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
       - backend
 
 volumes:
