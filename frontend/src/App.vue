@@ -26,8 +26,8 @@
     <div class="max-w-7xl mx-auto px-4 py-6">
       <!-- Tab: Véhicules -->
       <div v-if="activeTab === 'vehicules'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Vehicle List -->
-        <div class="lg:col-span-1 space-y-6">
+        <!-- Left: Vehicle List -->
+        <div class="lg:col-span-1">
           <div class="bg-white rounded-xl shadow p-5">
             <h2 class="text-xl font-bold mb-4">🚗 Gestion des Véhicules</h2>
             <div v-for="(v, i) in vehicles" :key="v.id"
@@ -44,8 +44,9 @@
             </div>
             <button @click="showAddVehicle = true" class="w-full bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700">+ Ajouter un Véhicule</button>
           </div>
-
-          <!-- Vehicle Settings -->
+        </div>
+        <!-- Right: Vehicle Settings -->
+        <div class="lg:col-span-2 space-y-6">
           <div class="bg-white rounded-xl shadow p-5" v-if="currentVehicle">
             <h3 class="font-bold mb-3">⚙️ {{ currentVehicle.name }}</h3>
             <div class="space-y-3 text-sm">
@@ -67,59 +68,125 @@
       </div>
 
       <!-- Tab: Sites -->
-      <div v-if="activeTab === 'sites'" class="space-y-6">
-        <div class="bg-white rounded-xl shadow p-5">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-bold">📍 Sites de Terrain</h2>
-            <div class="flex gap-2">
-              <button @click="showAddDest = true" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-emerald-700">+ Site</button>
-              <button @click="calcRoutes" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700">🔄 Optimiser Routes</button>
+      <div v-if="activeTab === 'sites'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left: Vehicle List -->
+        <div class="lg:col-span-1">
+          <div class="bg-white rounded-xl shadow p-5">
+            <h2 class="text-xl font-bold mb-4">🚗 Gestion des Véhicules</h2>
+            <div v-for="(v, i) in vehicles" :key="v.id"
+              class="vehicle-card bg-gray-50 p-4 rounded-lg mb-3 border cursor-pointer"
+              :class="{ 'ring-2 ring-emerald-500 bg-emerald-50': selectedIdx === i }"
+              @click="selectVehicle(i)">
+              <div class="flex justify-between items-start">
+                <h3 class="font-semibold">{{ v.name }}</h3>
+                <button @click.stop="deleteVehicle(i)" class="text-red-500 hover:text-red-700">&times;</button>
+              </div>
+              <p class="text-xs text-gray-500">📍 {{ v.homeAddress }}</p>
+              <p class="text-xs text-gray-500">🌫️ {{ v.emissionFactor }} kg CO₂/L · ⛽ {{ v.consumption }} L/100km</p>
+              <p class="text-xs text-gray-500">📋 {{ v.destinations?.length || 0 }} sites</p>
             </div>
+            <button @click="showAddVehicle = true" class="w-full bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700">+ Ajouter un Véhicule</button>
           </div>
-
-          <div v-if="!currentVehicle?.destinations?.length" class="text-center py-8 text-gray-400">Aucun site ajouté. Cliquez sur "+ Site" pour commencer.</div>
-
-          <div v-for="(d, i) in currentVehicle?.destinations" :key="d.id" class="destination-item border rounded-lg p-4 mb-3">
-            <div class="flex justify-between items-start">
-              <h3 class="font-semibold">{{ d.name || 'Site ' + (i+1) }}</h3>
-              <div class="flex gap-2 text-sm">
-                <button @click="editDest(i)" class="text-blue-600">Modifier</button>
-                <button @click="deleteDest(i)" class="text-red-600">Supprimer</button>
+        </div>
+        <!-- Right: Sites List -->
+        <div class="lg:col-span-2">
+          <div class="bg-white rounded-xl shadow p-5">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-bold">📍 Sites de Terrain</h2>
+              <div class="flex gap-2">
+                <button @click="showAddDest = true" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-emerald-700">+ Site</button>
+                <button @click="calcRoutes" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700">🔄 Optimiser Routes</button>
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-2 text-sm mt-2">
-              <p>📍 {{ d.address }}</p>
-              <p>📏 {{ d.measurements || '—' }}</p>
-              <p>⏱ {{ d.duration }}h</p>
-              <p>📅 Jours: {{ d.days?.join(', ') }}</p>
-              <p>📐 Distance: {{ d.roundTripDistance?.toFixed(1) }} km</p>
-              <p>🌫️ CO₂: {{ d.co2Emissions?.toFixed(2) }} kg</p>
+
+            <div v-if="!currentVehicle?.destinations?.length" class="text-center py-8 text-gray-400">Aucun site ajouté. Cliquez sur "+ Site" pour commencer.</div>
+
+            <div v-for="(d, i) in currentVehicle?.destinations" :key="d.id" class="destination-item border rounded-lg p-4 mb-3">
+              <div class="flex justify-between items-start">
+                <h3 class="font-semibold">{{ d.name || 'Site ' + (i+1) }}</h3>
+                <div class="flex gap-2 text-sm">
+                  <button @click="editDest(i)" class="text-blue-600">Modifier</button>
+                  <button @click="deleteDest(i)" class="text-red-600">Supprimer</button>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-sm mt-2">
+                <p>📍 {{ d.address }}</p>
+                <p>📏 {{ d.measurements || '—' }}</p>
+                <p>⏱ {{ d.duration }}h</p>
+                <p>📅 Jours: {{ d.days?.join(', ') }}</p>
+                <p>📐 Distance: {{ d.roundTripDistance?.toFixed(1) }} km</p>
+                <p>🌫️ CO₂: {{ d.co2Emissions?.toFixed(2) }} kg</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Tab: Carte -->
-      <div v-if="activeTab === 'carte'" class="space-y-6">
-        <div class="bg-white rounded-xl shadow p-5">
-          <h3 class="font-bold mb-3">🗺️ Carte</h3>
-          <div id="map" class="map-container"></div>
+      <div v-if="activeTab === 'carte'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left: Vehicle List -->
+        <div class="lg:col-span-1">
+          <div class="bg-white rounded-xl shadow p-5">
+            <h2 class="text-xl font-bold mb-4">🚗 Gestion des Véhicules</h2>
+            <div v-for="(v, i) in vehicles" :key="v.id"
+              class="vehicle-card bg-gray-50 p-4 rounded-lg mb-3 border cursor-pointer"
+              :class="{ 'ring-2 ring-emerald-500 bg-emerald-50': selectedIdx === i }"
+              @click="selectVehicle(i)">
+              <div class="flex justify-between items-start">
+                <h3 class="font-semibold">{{ v.name }}</h3>
+                <button @click.stop="deleteVehicle(i)" class="text-red-500 hover:text-red-700">&times;</button>
+              </div>
+              <p class="text-xs text-gray-500">📍 {{ v.homeAddress }}</p>
+              <p class="text-xs text-gray-500">🌫️ {{ v.emissionFactor }} kg CO₂/L · ⛽ {{ v.consumption }} L/100km</p>
+              <p class="text-xs text-gray-500">📋 {{ v.destinations?.length || 0 }} sites</p>
+            </div>
+            <button @click="showAddVehicle = true" class="w-full bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700">+ Ajouter un Véhicule</button>
+          </div>
+        </div>
+        <!-- Right: Map -->
+        <div class="lg:col-span-2">
+          <div class="bg-white rounded-xl shadow p-5">
+            <h3 class="font-bold mb-3">🗺️ Carte</h3>
+            <div id="map" class="map-container"></div>
+          </div>
         </div>
       </div>
 
       <!-- Tab: Résumé -->
-      <div v-if="activeTab === 'resume'" class="space-y-6">
-        <div class="bg-white rounded-xl shadow p-5">
-          <h3 class="text-xl font-bold mb-4">📊 Résumé</h3>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div class="bg-blue-50 p-4 rounded-lg"><p class="text-sm text-blue-800">Distance Totale</p><p class="text-2xl font-bold text-blue-600">{{ totalDistance.toFixed(1) }} km</p></div>
-            <div class="bg-yellow-50 p-4 rounded-lg"><p class="text-sm text-yellow-800">Carburant</p><p class="text-2xl font-bold text-yellow-600">{{ totalFuel.toFixed(1) }} L</p></div>
-            <div class="bg-red-50 p-4 rounded-lg"><p class="text-sm text-red-800">CO₂ Total</p><p class="text-2xl font-bold text-red-600">{{ totalCO2.toFixed(2) }} kg</p></div>
-            <div class="bg-purple-50 p-4 rounded-lg"><p class="text-sm text-purple-800">Sites</p><p class="text-2xl font-bold text-purple-600">{{ currentVehicle?.destinations?.length || 0 }}</p></div>
+      <div v-if="activeTab === 'resume'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left: Vehicle List -->
+        <div class="lg:col-span-1">
+          <div class="bg-white rounded-xl shadow p-5">
+            <h2 class="text-xl font-bold mb-4">🚗 Gestion des Véhicules</h2>
+            <div v-for="(v, i) in vehicles" :key="v.id"
+              class="vehicle-card bg-gray-50 p-4 rounded-lg mb-3 border cursor-pointer"
+              :class="{ 'ring-2 ring-emerald-500 bg-emerald-50': selectedIdx === i }"
+              @click="selectVehicle(i)">
+              <div class="flex justify-between items-start">
+                <h3 class="font-semibold">{{ v.name }}</h3>
+                <button @click.stop="deleteVehicle(i)" class="text-red-500 hover:text-red-700">&times;</button>
+              </div>
+              <p class="text-xs text-gray-500">📍 {{ v.homeAddress }}</p>
+              <p class="text-xs text-gray-500">🌫️ {{ v.emissionFactor }} kg CO₂/L · ⛽ {{ v.consumption }} L/100km</p>
+              <p class="text-xs text-gray-500">📋 {{ v.destinations?.length || 0 }} sites</p>
+            </div>
+            <button @click="showAddVehicle = true" class="w-full bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700">+ Ajouter un Véhicule</button>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><h4 class="font-semibold mb-2">Par Véhicule</h4><div v-for="vt in allTotals" :key="vt.name" class="flex justify-between py-1 text-sm border-b"><span>{{ vt.name }}</span><span class="font-bold">{{ vt.co2.toFixed(2) }} kg CO₂</span></div></div>
-            <div><h4 class="font-semibold mb-2">Répartition CO₂</h4><canvas id="chart"></canvas></div>
+        </div>
+        <!-- Right: Summary -->
+        <div class="lg:col-span-2">
+          <div class="bg-white rounded-xl shadow p-5">
+            <h3 class="text-xl font-bold mb-4">📊 Résumé</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div class="bg-blue-50 p-4 rounded-lg"><p class="text-sm text-blue-800">Distance Totale</p><p class="text-2xl font-bold text-blue-600">{{ totalDistance.toFixed(1) }} km</p></div>
+              <div class="bg-yellow-50 p-4 rounded-lg"><p class="text-sm text-yellow-800">Carburant</p><p class="text-2xl font-bold text-yellow-600">{{ totalFuel.toFixed(1) }} L</p></div>
+              <div class="bg-red-50 p-4 rounded-lg"><p class="text-sm text-red-800">CO₂ Total</p><p class="text-2xl font-bold text-red-600">{{ totalCO2.toFixed(2) }} kg</p></div>
+              <div class="bg-purple-50 p-4 rounded-lg"><p class="text-sm text-purple-800">Sites</p><p class="text-2xl font-bold text-purple-600">{{ currentVehicle?.destinations?.length || 0 }}</p></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><h4 class="font-semibold mb-2">Par Véhicule</h4><div v-for="vt in allTotals" :key="vt.name" class="flex justify-between py-1 text-sm border-b"><span>{{ vt.name }}</span><span class="font-bold">{{ vt.co2.toFixed(2) }} kg CO₂</span></div></div>
+              <div><h4 class="font-semibold mb-2">Répartition CO₂</h4><canvas id="chart"></canvas></div>
+            </div>
           </div>
         </div>
       </div>
