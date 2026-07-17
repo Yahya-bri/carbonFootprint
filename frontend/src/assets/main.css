@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.map-container { height: 450px; width: 100%; border-radius: 0.5rem; }
+.vehicle-card { transition: all 0.3s; }
+.vehicle-card:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+.destination-item { animation: fadeIn 0.5s; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.gantt-container { height: 500px; width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: white; display: flex; flex-direction: column; }
+.gantt-timeline { display: flex; flex-direction: column; height: 100%; font-size: 12px; }
+.gantt-header { display: flex; background: #f9fafb; border-bottom: 2px solid #e5e7eb; height: 40px; align-items: center; font-weight: 600; flex-shrink: 0; }
+.gantt-body { flex: 1; overflow-y: auto; max-height: calc(500px - 40px); }
+.gantt-row { display: flex; border-bottom: 1px solid #f3f4f6; min-height: 40px; align-items: center; }
+.gantt-label { width: 200px; min-width: 200px; padding: 8px; border-right: 1px solid #e5e7eb; background: white; }
+.gantt-bar { position: absolute; height: 24px; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; color: white; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.gantt-bar:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.gantt-day-header { text-align: center; font-size: 10px; color: #6b7280; padding: 2px; border-right: 1px solid #f3f4f6; }
