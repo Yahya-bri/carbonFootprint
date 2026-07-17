@@ -180,7 +180,9 @@ async def get_summary(db: AsyncSession = Depends(get_db)):
 @app.get("/api/route/{vehicle_id}")
 async def get_optimized_route(vehicle_id: int, db: AsyncSession = Depends(get_db)):
     """Calculate optimized route for a vehicle using OSRM."""
-    result = await db.execute(select(Vehicle).where(Vehicle.id == vehicle_id))
+    result = await db.execute(
+        select(Vehicle).options(selectinload(Vehicle.destinations)).where(Vehicle.id == vehicle_id)
+    )
     v = result.scalar_one_or_none()
     if v is None:
         raise HTTPException(404, "Vehicle not found")
