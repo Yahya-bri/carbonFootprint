@@ -152,6 +152,52 @@
         </div>
       </div>
 
+      <!-- Tab: Global -->
+      <div v-if="activeTab === 'global'">
+        <div class="bg-white rounded-xl shadow p-5">
+          <h3 class="text-xl font-bold mb-4">🌐 Synthèse Globale</h3>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-emerald-50 p-4 rounded-lg"><p class="text-sm text-emerald-800">Véhicules</p><p class="text-2xl font-bold text-emerald-600">{{ vehicles.length }}</p></div>
+            <div class="bg-purple-50 p-4 rounded-lg"><p class="text-sm text-purple-800">Sites</p><p class="text-2xl font-bold text-purple-600">{{ globalTotals.destinations }}</p></div>
+            <div class="bg-red-50 p-4 rounded-lg"><p class="text-sm text-red-800">CO₂ Total</p><p class="text-2xl font-bold text-red-600">{{ globalTotals.co2.toFixed(2) }} kg</p></div>
+            <div class="bg-blue-50 p-4 rounded-lg"><p class="text-sm text-blue-800">Distance</p><p class="text-2xl font-bold text-blue-600">{{ globalTotals.distance.toFixed(1) }} km</p></div>
+            <div class="bg-yellow-50 p-4 rounded-lg"><p class="text-sm text-yellow-800">Carburant</p><p class="text-2xl font-bold text-yellow-600">{{ globalTotals.fuel.toFixed(1) }} L</p></div>
+          </div>
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="text-left p-2">Nom</th>
+                  <th class="text-right p-2">Sites</th>
+                  <th class="text-right p-2">Distance (km)</th>
+                  <th class="text-right p-2">Carburant (L)</th>
+                  <th class="text-right p-2">CO₂ (kg)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="vt in perVehicleTotals" :key="vt.name" class="border-b">
+                  <td class="p-2">{{ vt.name }}</td>
+                  <td class="text-right p-2">{{ vt.destinations }}</td>
+                  <td class="text-right p-2">{{ vt.distance.toFixed(1) }}</td>
+                  <td class="text-right p-2">{{ vt.fuel.toFixed(1) }}</td>
+                  <td class="text-right p-2">{{ vt.co2.toFixed(2) }}</td>
+                </tr>
+              </tbody>
+              <tfoot class="bg-gray-50 font-bold">
+                <tr>
+                  <td class="p-2">Total</td>
+                  <td class="text-right p-2">{{ globalTotals.destinations }}</td>
+                  <td class="text-right p-2">{{ globalTotals.distance.toFixed(1) }}</td>
+                  <td class="text-right p-2">{{ globalTotals.fuel.toFixed(1) }}</td>
+                  <td class="text-right p-2">{{ globalTotals.co2.toFixed(2) }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div><h4 class="font-semibold mb-2">Répartition CO₂ par Véhicule</h4><canvas id="global-chart"></canvas></div>
+        </div>
+      </div>
+
       <!-- Tab: Résumé -->
       <div v-if="activeTab === 'resume'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left: Vehicle List -->
@@ -173,21 +219,53 @@
             <button @click="showAddVehicle = true" class="w-full bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700">+ Ajouter un Véhicule</button>
           </div>
         </div>
-        <!-- Right: Summary -->
+        <!-- Right: Detailed Report for Selected Vehicle -->
         <div class="lg:col-span-2">
-          <div class="bg-white rounded-xl shadow p-5">
-            <h3 class="text-xl font-bold mb-4">📊 Résumé</h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div class="bg-blue-50 p-4 rounded-lg"><p class="text-sm text-blue-800">Distance Totale</p><p class="text-2xl font-bold text-blue-600">{{ totalDistance.toFixed(1) }} km</p></div>
-              <div class="bg-yellow-50 p-4 rounded-lg"><p class="text-sm text-yellow-800">Carburant</p><p class="text-2xl font-bold text-yellow-600">{{ totalFuel.toFixed(1) }} L</p></div>
-              <div class="bg-red-50 p-4 rounded-lg"><p class="text-sm text-red-800">CO₂ Total</p><p class="text-2xl font-bold text-red-600">{{ totalCO2.toFixed(2) }} kg</p></div>
-              <div class="bg-purple-50 p-4 rounded-lg"><p class="text-sm text-purple-800">Sites</p><p class="text-2xl font-bold text-purple-600">{{ currentVehicle?.destinations?.length || 0 }}</p></div>
+          <div class="bg-white rounded-xl shadow p-5" v-if="currentVehicle">
+            <h3 class="text-xl font-bold mb-4">📊 Rapport Détaillé — {{ currentVehicle.name }}</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
+              <div><span class="text-gray-600">Nom du véhicule:</span> <span class="font-semibold">{{ currentVehicle.name }}</span></div>
+              <div><span class="text-gray-600">Adresse de base:</span> <span class="font-semibold">{{ currentVehicle.homeAddress }}</span></div>
+              <div><span class="text-gray-600">Facteur d'émission:</span> <span class="font-semibold">{{ currentVehicle.emissionFactor }} kg CO₂/L</span></div>
+              <div><span class="text-gray-600">Consommation:</span> <span class="font-semibold">{{ currentVehicle.consumption }} L/100km</span></div>
+              <div><span class="text-gray-600">Étude:</span> <span class="font-semibold">{{ currentVehicle.studySettings?.studyName || '—' }}</span></div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><h4 class="font-semibold mb-2">Par Véhicule</h4><div v-for="vt in allTotals" :key="vt.name" class="flex justify-between py-1 text-sm border-b"><span>{{ vt.name }}</span><span class="font-bold">{{ vt.co2.toFixed(2) }} kg CO₂</span></div></div>
-              <div><h4 class="font-semibold mb-2">Répartition CO₂</h4><canvas id="chart"></canvas></div>
+            <div class="overflow-x-auto mb-6">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="text-left p-2">Nom</th>
+                    <th class="text-left p-2">Adresse</th>
+                    <th class="text-right p-2">Jours</th>
+                    <th class="text-right p-2">Distance (km)</th>
+                    <th class="text-right p-2">Carburant (L)</th>
+                    <th class="text-right p-2">CO₂ (kg)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="d in currentVehicle.destinations" :key="d.id" class="border-b">
+                    <td class="p-2">{{ d.name || '—' }}</td>
+                    <td class="p-2">{{ d.address || '—' }}</td>
+                    <td class="text-right p-2">{{ d.days?.length || 0 }}</td>
+                    <td class="text-right p-2">{{ d.roundTripDistance?.toFixed(1) || '0.0' }}</td>
+                    <td class="text-right p-2">{{ d.fuelUsed?.toFixed(1) || '0.0' }}</td>
+                    <td class="text-right p-2">{{ d.co2Emissions?.toFixed(2) || '0.00' }}</td>
+                  </tr>
+                </tbody>
+                <tfoot class="bg-gray-50 font-bold">
+                  <tr>
+                    <td class="p-2" colspan="2">Total</td>
+                    <td class="text-right p-2">{{ currentVehicle.destinations?.reduce((s,d) => s + (d.days?.length||0), 0) || 0 }}</td>
+                    <td class="text-right p-2">{{ totalDistance.toFixed(1) }}</td>
+                    <td class="text-right p-2">{{ totalFuel.toFixed(1) }}</td>
+                    <td class="text-right p-2">{{ totalCO2.toFixed(2) }}</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
+            <div><h4 class="font-semibold mb-2">CO₂ par Destination</h4><canvas id="co2-per-dest"></canvas></div>
           </div>
+          <div v-else class="bg-white rounded-xl shadow p-5 text-gray-400 text-center">Aucun véhicule sélectionné.</div>
         </div>
       </div>
     </div>
@@ -251,6 +329,7 @@ const tabs = [
   { id: 'vehicules', label: '🚗 Véhicules' },
   { id: 'sites', label: '📍 Sites' },
   { id: 'carte', label: '🗺️ Carte' },
+  { id: 'global', label: '🌐 Global' },
   { id: 'resume', label: '📊 Résumé' },
 ]
 const activeTab = ref('vehicules')
@@ -262,6 +341,8 @@ let map = null
 let markers = []
 let routeLayers = []
 let chart = null
+let globalChart = null
+let destChart = null
 
 const DAY_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
 
@@ -277,6 +358,27 @@ const allTotals = computed(() => vehicles.value.map(v => ({
   name: v.name,
   co2: v.destinations?.reduce((s, d) => s + (d.co2Emissions || 0), 0) || 0,
 })))
+
+const perVehicleTotals = computed(() => vehicles.value.map(v => ({
+  name: v.name,
+  destinations: v.destinations?.length || 0,
+  distance: v.destinations?.reduce((s, d) => s + (d.roundTripDistance || 0), 0) || 0,
+  fuel: v.destinations?.reduce((s, d) => s + (d.fuelUsed || 0), 0) || 0,
+  co2: v.destinations?.reduce((s, d) => s + (d.co2Emissions || 0), 0) || 0,
+})))
+
+const globalTotals = computed(() => {
+  const t = { destinations: 0, distance: 0, fuel: 0, co2: 0 }
+  for (const v of vehicles.value) {
+    for (const d of v.destinations || []) {
+      t.distance += d.roundTripDistance || 0
+      t.fuel += d.fuelUsed || 0
+      t.co2 += d.co2Emissions || 0
+      t.destinations += 1
+    }
+  }
+  return t
+})
 
 async function loadData() {
   try {
@@ -451,17 +553,38 @@ function updateMap() {
 }
 
 function updateChart() {
-  if (chart) { chart.destroy(); chart = null }
-  const canvas = document.getElementById('chart')
-  if (!canvas || !allTotals.value.length) return
+  updateGlobalChart()
+  updateDestChart()
+}
+
+function updateGlobalChart() {
+  if (globalChart) { globalChart.destroy(); globalChart = null }
+  const canvas = document.getElementById('global-chart')
+  if (!canvas || !perVehicleTotals.value.length) return
   const ctx = canvas.getContext('2d')
-  chart = new Chart(ctx, {
+  globalChart = new Chart(ctx, {
     type: 'pie',
     data: {
-      labels: allTotals.value.map(v => v.name),
-      datasets: [{ data: allTotals.value.map(v => v.co2), backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444'] }]
+      labels: perVehicleTotals.value.map(v => v.name),
+      datasets: [{ data: perVehicleTotals.value.map(v => v.co2), backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6', '#F97316'] }]
     },
     options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  })
+}
+
+function updateDestChart() {
+  if (destChart) { destChart.destroy(); destChart = null }
+  const canvas = document.getElementById('co2-per-dest')
+  if (!canvas || !currentVehicle.value?.destinations?.length) return
+  const ctx = canvas.getContext('2d')
+  const dests = currentVehicle.value.destinations
+  destChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: dests.map(d => d.name || '—'),
+      datasets: [{ label: 'CO₂ (kg)', data: dests.map(d => d.co2Emissions || 0), backgroundColor: '#EF4444' }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
   })
 }
 
@@ -479,7 +602,9 @@ watch(activeTab, (tab) => {
       updateMap()
     })
   } else if (tab === 'resume') {
-    nextTick(updateChart)
+    nextTick(updateDestChart)
+  } else if (tab === 'global') {
+    nextTick(updateGlobalChart)
   }
 })
 
@@ -498,5 +623,5 @@ function initMap() {
   updateMap()
 }
 
-watch(currentVehicle, () => { nextTick(() => { updateMap(); updateChart() }) }, { deep: true })
+watch(currentVehicle, () => { nextTick(() => { updateMap(); updateDestChart() }) }, { deep: true })
 </script>
