@@ -273,8 +273,8 @@ async def _osrm_route(coords: str) -> dict | None:
                     "duration": route["duration"],
                     "geometry": route["geometry"],
                 }
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"OSRM route failed (OSRM may still be starting): {e}")
     return None
 
 

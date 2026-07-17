@@ -1,4 +1,5 @@
 import os
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
@@ -24,3 +25,9 @@ async def init_db():
     async with engine.begin() as conn:
         from backend.models import Vehicle, Destination  # noqa: F401
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
+        # Add missing columns if upgrading from an older schema
+        for col, col_type in [("lat", "DOUBLE PRECISION"), ("lng", "DOUBLE PRECISION")]:
+            try:
+                await conn.execute(text(f"ALTER TABLE destinations ADD COLUMN {col} {col_type}"))
+            except Exception:
+                pass  # Column already exists
