@@ -19,7 +19,7 @@ services:
       sh -c "
         if [ ! -f /data/france-latest.osm.pbf ]; then
           echo 'Downloading OSM data for France...';
-          wget -q -O /data/france-latest.osm.pbf https://download.geofabrik.de/europe/france-latest.osm.pbf;
+          curl -L -o /data/france-latest.osm.pbf https://download.geofabrik.de/europe/france-latest.osm.pbf;
         fi &&
         if [ ! -f /data/france-latest.osrm ]; then
           osrm-extract -p /opt/car.lua /data/france-latest.osm.pbf &&
